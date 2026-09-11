@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from hub.store import NotFound, Registry
 
-_DEFAULT_DEST = Path.home() / ".axe" / "skills"
+_DEFAULT_DEST = Path.home() / ".claude" / "skills"
 
 def _checksum(content):
     return hashlib.sha256(content.encode()).hexdigest()
