@@ -4,15 +4,30 @@ A read-only HTTP catalogue that federates skills from upstream registries — Cl
 
 Upstream sources are credited by name in every response. A skill published to ClawHub by its author arrives here as `"source": "ClawHub"`. A first-party AXE skill is labelled `"source": "axe"`. Attribution is data, not a display choice.
 
-## Upstream sources
+## Upstream sources and attribution
 
-| Registry | What it contributes |
-|---|---|
-| **ClawHub** | Community-authored skills across models and runtimes |
-| **Smithery** | MCP-compatible tool servers |
-| **AXE** | First-party skills authored and maintained by AXE |
+The catalogue federates from multiple upstream registries. Every skill carries the name of the registry it came from — attribution is data, not a display decision.
 
-Source labels appear verbatim in `/v1/skills` responses and in the web catalogue. The `source` field is `"<registry>:<skill-name>"` for federated skills (e.g. `"ClawHub:auto-tail"`) and `"axe"` for first-party skills.
+| Registry | Source label | What it contributes |
+|---|---|---|
+| **ClawHub** | `ClawHub` | Community-authored skills across models and runtimes (~76% of the catalogue) |
+| **Smithery** | `smithery` | MCP-compatible tool servers |
+| **AXE** | `axe` | First-party skills authored and maintained by AXE |
+
+The `source` field in every `/v1/skills` response carries the upstream registry name. The transport hop is recorded separately (`"hermes:ClawHub"` means "arrived via Hermes, from ClawHub") and display layers strip only that hop, keeping the registry name visible:
+
+```
+GET /v1/skills/auto-tail
+
+{
+  "name": "auto-tail",
+  "metadata": { "source": "hermes:ClawHub", ... }
+}
+```
+
+Display label: **ClawHub** (strip before the first `:` to get the transport; the part after is the registry to credit).
+
+Want to add a new upstream? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## API
 
