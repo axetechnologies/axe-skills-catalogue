@@ -158,6 +158,33 @@ Environment variables:
 | `AXE_HUB_DEFAULT_TENANT` | Default tenant when no header is present |
 | `AXE_HUB_ALLOW_ORIGIN` | CORS allowed origin (omit to disable CORS headers) |
 
+## Offline snapshot
+
+A full JSON snapshot of the catalogue is published twice daily as the
+`catalogue-latest` release asset (`skills.json` / `skills-meta.json`) -- see
+`docs/api/README.md` for the sync/freshness contract and how to fetch it
+without hitting the live API.
+
+## Catalogue snapshot
+
+The catalogue is live at `https://skills.axe.onl/v1/skills`. For a full snapshot:
+
+```bash
+curl 'https://skills.axe.onl/v1/skills?limit=1000&offset=0'
+```
+
+Paginate with `offset` for tenants with large catalogues.
+
+## Eval surface
+
+The `/v1/skills/<name>` response includes an `eval` key when the deployment has eval data for that skill version. This public deployment does not serve evals — the `eval` key will be absent from all responses. To distinguish "skill has no eval" from "this deployment does not serve evals at all", check the deployment's `/healthz` response:
+
+```json
+{ "status": "ok", "evals": false }
+```
+
+A deployment with evals enabled will show `"evals": true`.
+
 ## Schema
 
 See `hub/schema.sql` for the database schema.

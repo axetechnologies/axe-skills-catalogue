@@ -1,0 +1,68 @@
+name: Sync Skills Catalogue
+
+# This repo has no federation credentials (AXE.md rule 2) and cannot rebuild
+# the catalogue from upstreams itself -- that pipeline lives in the private
+# hub. What this repo owns is a durable, offline-fetchable mirror of the
+# canonical published snapshot, refreshed on a schedule and never committed.
+
+on:
+  schedule:
+    - cron: "15 8,20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: axeskills-catalogue-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'axetechnologies/axe-skills-catalogue'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the canonical snapshot
+        env:
+          SOURCE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axe.onl/docs/api' }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 5 --retry-delay 10 -o skills.json "$SOURCE_URL/skills.json"
+          curl -fsSL --retry 5 --retry-delay 10 -o skills-meta.json "$SOURCE_URL/skills-meta.json"
+
+      - name: Refuse to publish an empty or malformed snapshot
+        # An empty or truncated fetch is a failure shape, not a value -- it
+        # must not overwrite a good release asset.
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, sys
+
+          skills = json.load(open("skills.json"))
+          meta = json.load(open("skills-meta.json"))
+
+          if not isinstance(skills, list) or len(skills) == 0:
+              sys.exit(f"skills.json is empty or not a list ({len(skills) if isinstance(skills, list) else type(skills).__name__})")
+          if len(skills) < 50_000:
+              sys.exit(f"only {len(skills):,} skills -- refusing to publish a collapsed catalogue")
+          if len(skills) != meta.get("totalSkills"):
+              sys.exit(f"manifest says {meta.get('totalSkills')!r}, file has {len(skills):,}")
+
+          print(f"ok: {len(skills):,} skills, generatedAt={meta.get('generatedAt')}")
+          PY
+
+      - name: Publish as a release asset
+        # A stable release URL needs no deploy infra on our side and works
+        # for an air-gapped consumer fetching once and caching the file.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view catalogue-latest >/dev/null 2>&1; then
+            gh release create catalogue-latest --title "Catalogue snapshot (rolling)" \
+              --notes "Rolling mirror of the live skills catalogue. Overwritten twice daily; see docs/api/README.md for the contract."
+          fi
+          gh release upload catalogue-latest skills.json skills-meta.json --clobber

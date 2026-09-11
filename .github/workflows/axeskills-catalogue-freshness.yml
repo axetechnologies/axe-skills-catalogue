@@ -1,0 +1,118 @@
+name: Skills Catalogue Freshness Check
+
+# A successful sync run only proves the upload succeeded, not that the live
+# URL or the release asset actually serve a healthy catalogue. This probes
+# both and fails the job -- not just files an issue -- on missing, empty, or
+# stale data, because a zero-row catalogue is a failure shape, not a value.
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-freshness:
+    if: github.repository == 'axetechnologies/axe-skills-catalogue'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe the live manifest and the release asset
+        id: probe
+        env:
+          LIVE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axe.onl/docs/api' }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          fail() {
+            echo "status=$1" >> "$GITHUB_OUTPUT"
+            echo "detail=$2" >> "$GITHUB_OUTPUT"
+            echo "::error::$1: $2"
+            exit 1
+          }
+
+          if ! curl -fsSL --retry 3 --retry-delay 10 -o /tmp/live-meta.json "$LIVE_URL/skills-meta.json"; then
+            fail fetch-failed "Could not download $LIVE_URL/skills-meta.json"
+          fi
+          if ! curl -fsSL --retry 3 --retry-delay 10 -o /tmp/release-meta.json \
+              "https://github.com/$REPO/releases/download/catalogue-latest/skills-meta.json"; then
+            fail release-fetch-failed "Could not download the catalogue-latest release asset"
+          fi
+
+          python3 - "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          from datetime import datetime, timezone
+
+          out_path = sys.argv[1]
+
+          def load(path, label):
+              try:
+                  return json.load(open(path))
+              except Exception as exc:
+                  fail(out_path, f"{label}-parse-failed", f"JSON decode error: {exc}")
+
+          def fail(out_path, status, detail):
+              with open(out_path, "a") as f:
+                  f.write(f"status={status}\n")
+                  f.write(f"detail={detail}\n")
+              print(f"::error::{status}: {detail}")
+              sys.exit(1)
+
+          live = load("/tmp/live-meta.json", "live")
+          release = load("/tmp/release-meta.json", "release")
+
+          total = live.get("totalSkills", 0)
+          generated = live.get("generatedAt", "")
+
+          if not isinstance(total, int) or total == 0:
+              fail(out_path, "collapsed", f"live totalSkills is {total!r} -- treating an empty catalogue as a failure, not a value")
+          if total < 50_000:
+              fail(out_path, "collapsed", f"only {total:,} skills live -- a major source may have gone")
+
+          try:
+              age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(generated)).total_seconds() / 3600
+          except ValueError:
+              fail(out_path, "bad-timestamp", f"Could not parse generatedAt={generated!r}")
+
+          # 26h, not 12h: the sync runs twice daily, so one missed run is
+          # tolerable churn and only a genuinely stuck pipeline trips this.
+          if age_h > 26:
+              fail(out_path, "stale", f"Live catalogue is {age_h:.1f}h old (generatedAt={generated})")
+
+          release_total = release.get("totalSkills", 0)
+          if not isinstance(release_total, int) or release_total < 50_000:
+              fail(out_path, "release-collapsed", f"release asset reports {release_total!r} skills")
+
+          with open(out_path, "a") as f:
+              f.write("status=ok\n")
+              f.write(f"detail={total:,} skills live, {age_h:.1f}h old; release asset {release_total:,} skills\n")
+          print(f"ok: {total:,} skills, {age_h:.1f}h old")
+          PY
+
+      - name: Open an issue when the catalogue is unhealthy
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATUS: ${{ steps.probe.outputs.status }}
+          DETAIL: ${{ steps.probe.outputs.detail }}
+        run: |
+          set -euo pipefail
+          TITLE="Skills catalogue unhealthy: ${STATUS:-check-failed}"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          BODY="${DETAIL:-The freshness check failed before producing a status.}
+
+          Probed by \`axeskills-catalogue-freshness.yml\` (run \`${{ github.run_id }}\`).
+          The sync workflow is \`axeskills-catalogue-sync.yml\`; check whether its last
+          scheduled run succeeded before assuming the upstream is at fault."
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY" --label catalogue,automated || \
+              gh issue create --title "$TITLE" --body "$BODY"
+          fi

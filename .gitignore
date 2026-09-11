@@ -4,3 +4,5 @@ __pycache__/
 *.npz
 *.log
 .env
+docs/api/skills.json
+docs/api/skills-meta.json
