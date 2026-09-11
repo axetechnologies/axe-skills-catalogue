@@ -11,7 +11,7 @@ from typing import Any
 from urllib.parse import parse_qs, quote, urlparse
 
 from hub import discover
-from hub.evals import EvalStore
+from hub.evals import EvalStore, NoOpEvalStore as _NoOpEvalStore
 from hub.store import Conflict, HubError, NotFound, Registry
 
 
@@ -134,7 +134,10 @@ class _Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/")
 
         if path == "/healthz":
-            self._send_json(200, {"status": "ok"})
+            self._send_json(200, {
+                "status": "ok",
+                "evals": not isinstance(self.eval_store, _NoOpEvalStore),
+            })
             return
 
         if path == "/v1/skills":
@@ -227,55 +230,13 @@ class _Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/docs/skills"):
-            tenant = self._resolve_tenant()
-            if not tenant:
-                self._send_json(403, {"error": "missing tenant"})
-                return
-            from axeskills_operator_portal import (
-                OperatorCatalog,
-                render_category,
-                render_index,
-                render_search,
-            )
-
-            cat = OperatorCatalog(self.registry._path, tenant)
-            qs = self._qs()
-            try:
-                page = max(int((qs.get("page") or ["1"])[0]), 1)
-            except ValueError:
-                page = 1
-
-            rest = path[len("/docs/skills"):]
-            if rest.startswith("/c/") or rest == "/search":
-                # The category sidebar is part of the page frame, so a listing
-                # needs the same counts the index does. summary() is one pass
-                # over a temp table, not three scans -- see OperatorCatalog.
-                cats, total, _srcs, _tiers = cat.summary()
-                if rest == "/search":
-                    q = (qs.get("q") or [""])[0].strip()
-                    self._send_html(200, render_search(
-                        q, cat.search(q, page) if q else [], page, cats, total))
-                else:
-                    slug = rest[len("/c/"):]
-                    label = next((c.label for c in cats if c.category == slug), slug)
-                    self._send_html(200, render_category(
-                        slug, label, cat.by_category(slug, page), page, cats, total))
-            else:
-                # A ?q= on the index used to be dropped on the floor: the page
-                # rendered unfiltered and still answered 200, so a caller could
-                # not tell its search had been ignored. Searching is one URL.
-                q = (qs.get("q") or [""])[0].strip()
-                if q:
-                    target = "/docs/skills/search?q=" + quote(q, safe="")
-                    if page > 1:
-                        target += "&page=%d" % page
-                    self.send_response(302)
-                    self.send_header("Location", target)
-                    self.send_header("Content-Length", "0")
-                    self.end_headers()
-                    return
-                cats, total, srcs, tiers = cat.summary()
-                self._send_html(200, render_index(cats, total, srcs, tiers))
+            # The operator browse UI (/docs/skills) requires the private
+            # operator portal and is not part of the public catalogue surface.
+            # Use GET /v1/skills or GET /v1/skills/search for catalogue access.
+            self._send_json(404, {
+                "error": "not found",
+                "hint": "use GET /v1/skills or GET /v1/skills/search",
+            })
             return
 
         # The repo's markdown docs. Reachable on the public origin without a

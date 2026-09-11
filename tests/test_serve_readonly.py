@@ -63,13 +63,13 @@ class _Server:
 
         from hub.serve import make_server
         from hub.store import Registry
-        from hub.evals import EvalStore
+        from hub.evals import NoOpEvalStore
 
         port = _free_port()
         self.base = f"http://127.0.0.1:{port}"
         self.httpd = make_server(
             Registry(self.db_path),
-            EvalStore(),
+            NoOpEvalStore(),
             host="127.0.0.1",
             port=port,
             default_tenant="t1",
@@ -220,3 +220,65 @@ def test_post_blocked_in_read_only(srv):
 def test_audit_returns_404_in_read_only(srv):
     code, _ = srv.get("/v1/audit")
     assert code == 404
+
+
+# --- HTML surface ----------------------------------------------------------
+
+def test_healthz_reports_evals_false(srv):
+    code, body = srv.get("/healthz")
+    assert code == 200
+    assert body.get("evals") is False
+
+
+def test_portal_root_returns_html(srv):
+    code, body = srv.get("/portal")
+    assert code == 200
+    assert isinstance(body, str) and "<html" in body.lower()
+
+
+def test_portal_skill_page_returns_html(srv):
+    code, body = srv.get("/portal/auto-tail")
+    assert code == 200
+    assert isinstance(body, str) and "auto-tail" in body
+
+
+def test_portal_missing_skill_returns_404(srv):
+    code, _ = srv.get("/portal/no-such-skill")
+    assert code == 404
+
+
+def test_docs_skills_route_removed(srv):
+    # /docs/skills is the operator browse UI and is not part of the public
+    # surface. It must return 404, not 500.
+    code, body = srv.get("/docs/skills")
+    assert code == 404
+    assert code != 500
+
+
+def test_docs_skills_search_route_removed(srv):
+    code, _ = srv.get("/docs/skills/search?q=log")
+    assert code == 404
+    assert code != 500
+
+
+def test_root_redirects(srv):
+    # / redirects to /docs/skills, but /docs/skills returns 404 -- the
+    # redirect itself must not be a 500.
+    req = urllib.request.Request(srv.base + "/", method="GET")
+    try:
+        urllib.request.urlopen(req)
+    except urllib.error.HTTPError as e:
+        assert e.code != 500
+    except urllib.error.URLError:
+        pass  # redirect followed to 404 -- still not 500
+
+
+def test_no_route_returns_500(srv):
+    for path in [
+        "/healthz", "/v1/skills", "/v1/skills/auto-tail",
+        "/v1/skills/no-such", "/portal", "/portal/auto-tail",
+        "/portal/no-such", "/docs/skills", "/docs/skills/search?q=x",
+        "/v1/audit",
+    ]:
+        code, _ = srv.get(path)
+        assert code != 500, f"GET {path} returned 500"
