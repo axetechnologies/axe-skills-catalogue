@@ -14,14 +14,14 @@ The catalogue federates from multiple upstream registries. Every skill carries t
 | **Smithery** | `smithery` | MCP-compatible tool servers |
 | **AXE** | `axe` | First-party skills authored and maintained by AXE |
 
-The `source` field in every `/v1/skills` response carries the upstream registry name. The transport hop is recorded separately (`"hermes:ClawHub"` means "arrived via Hermes, from ClawHub") and display layers strip only that hop, keeping the registry name visible:
+The `source` field in every `/v1/skills` response carries the upstream registry name. The transport hop is recorded separately (`"axehub:ClawHub"` means "arrived via the federation hop, from ClawHub") and display layers strip only that hop, keeping the registry name visible:
 
 ```
 GET /v1/skills/auto-tail
 
 {
   "name": "auto-tail",
-  "metadata": { "source": "hermes:ClawHub", ... }
+  "metadata": { "source": "axehub:ClawHub", ... }
 }
 ```
 

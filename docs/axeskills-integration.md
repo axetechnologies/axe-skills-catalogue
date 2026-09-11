@@ -54,13 +54,13 @@ curl -s 'https://operator.axe.onl/v1/tools/find?q=deploy+a+container+to+kubernet
   "count": 5,
   "results": [
     {
-      "name": "community__hermes:NVIDIA__NVIDIA__tao-run-on-kubernetes",
+      "name": "community__axehub:NVIDIA__NVIDIA__tao-run-on-kubernetes",
       "title": "tao-run-on-kubernetes",
       "description": "Kubernetes execution platform — submits TAO container jobs as ...",
       "category": "infrastructure",
       "category_label": "Infrastructure",
       "tags": ["kubernetes", "k8s", "gpu", "compute", "container"],
-      "source": "hermes:NVIDIA",
+      "source": "axehub:NVIDIA",
       "verified": false,
       "use_count": 0,
       "version": "1.0.0",

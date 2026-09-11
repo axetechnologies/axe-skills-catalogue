@@ -132,7 +132,7 @@ _TAXONOMY_KEYS = {
 def _taxonomy(entry: CommunityEntry) -> dict:
     """Lift the provider's own classification out of entry.raw.
 
-    Providers disagree on casing (Hermes is camelCase), so each field accepts
+    Providers disagree on casing (the upstream is camelCase), so each field accepts
     several aliases. Kept generic on purpose: community.py must not learn the
     shape of any one upstream.
     """

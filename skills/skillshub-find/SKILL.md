@@ -30,7 +30,7 @@ finds the name, `--get` returns the document you actually read or run.
 
 | env | default | what it selects |
 |---|---|---|
-| `SKILLSHUB_TENANT` | `community-quarantine` | the ~111k mirrored from Hermes |
+| `SKILLSHUB_TENANT` | `community-quarantine` | the ~111k mirrored from upstream |
 | | `axe` | first-party, written and verified by AXE |
 | `SKILLSHUB_KEY` | unset | sent as `X-AXE-Key`; maps to its tenant server-side |
 | `SKILLSHUB_URL` | `https://skills.axe.onl` | point at `http://127.0.0.1:8741` for a local hub |

@@ -8,7 +8,7 @@ There are two paths: **federation** (pulling from an upstream registry automatic
 
 ### Federation
 
-Upstream registries are absorbed by periodic federation runs. Each adapter (`SmitheryCatalog`, `HermesCatalog`) implements `fetch() -> Iterator[CommunityEntry]`. Adding a new upstream means writing a class with that interface.
+Upstream registries are absorbed by periodic federation runs. Each adapter (`SmitheryCatalog`, `AxeCatalog`) implements `fetch() -> Iterator[CommunityEntry]`. Adding a new upstream means writing a class with that interface.
 
 When `federate()` runs:
 
@@ -57,14 +57,14 @@ The `skill_candidates` table records pending candidates with status `pending →
 
 Every federated row carries its source label verbatim:
 
-- `"source": "hermes:ClawHub"` — arrived via the Hermes adapter, from the ClawHub registry
+- `"source": "axehub:ClawHub"` — arrived via the federation adapter, from the ClawHub registry
 - `"source": "smithery"` — arrived via the Smithery adapter
 - `"source": "axe"` — first-party AXE skill
 
 Display layers strip only the transport hop and keep the registry name:
 
 ```js
-// "hermes:ClawHub" → "ClawHub"
+// "axehub:ClawHub" → "ClawHub"
 const label = source.includes(':') ? source.split(':')[1] : source;
 ```
 
