@@ -27,11 +27,16 @@ jobs:
 
       - name: Fetch the canonical snapshot
         env:
-          SOURCE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axe.onl/docs/api' }}
+          SOURCE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axetechnologies.ca/docs/api' }}
         run: |
           set -euo pipefail
-          curl -fsSL --retry 5 --retry-delay 10 -o skills.json "$SOURCE_URL/skills.json"
-          curl -fsSL --retry 5 --retry-delay 10 -o skills-meta.json "$SOURCE_URL/skills-meta.json"
+          # --compressed matters: the origin serves a pre-gzipped catalogue, which
+          # turns a ~38MB transfer into ~7MB. Uncompressed, the send outlasts the
+          # origin's worker timeout and is killed mid-body -- and curl -f cannot
+          # catch that, because the 200 goes out long before the write is cut.
+          # The validation step below is what actually proves the file is whole.
+          curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills.json "$SOURCE_URL/skills.json"
+          curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills-meta.json "$SOURCE_URL/skills-meta.json"
 
       - name: Refuse to publish an empty or malformed snapshot
         # An empty or truncated fetch is a failure shape, not a value -- it
