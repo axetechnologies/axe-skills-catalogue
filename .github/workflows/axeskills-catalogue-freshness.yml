@@ -25,7 +25,7 @@ jobs:
       - name: Probe the live manifest and the release asset
         id: probe
         env:
-          LIVE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axe.onl/docs/api' }}
+          LIVE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axetechnologies.ca/docs/api' }}
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
