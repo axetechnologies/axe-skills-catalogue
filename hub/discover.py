@@ -78,6 +78,20 @@ def _doc(row: dict) -> dict:
             meta = {}
     tax = meta.get("taxonomy") or {}
 
+    # Taxonomy fields live under metadata.taxonomy for first-party `skillmd` rows,
+    # but the ~65k mirrored community rows carry them at the TOP level of metadata
+    # (category / categoryLabel / tags / author / license) with NO `taxonomy` key.
+    # Read taxonomy first, then fall back to top-level metadata — without this,
+    # every community row had category="" so `/v1/tools/find?category=X` and the
+    # category facets matched nothing (the whole catalogue looked category-less).
+    def _tax(*keys: str) -> Any:
+        for src in (tax, meta):
+            for k in keys:
+                v = src.get(k)
+                if v:
+                    return v
+        return None
+
     # taxonomy first, content blob second. A mirrored `catalog` row keeps its
     # description inside the JSON document; a first-party `skillmd` row is
     # markdown and JSON-parsing it yields nothing, so reading only the blob
@@ -95,8 +109,9 @@ def _doc(row: dict) -> dict:
         if isinstance(doc, dict):
             desc = desc or (doc.get("description") or "").strip()
             label = (doc.get("name") or "").strip()
+    desc = desc or (meta.get("description") or "").strip()
 
-    tags = tax.get("tags") or []
+    tags = _tax("tags") or []
     if not isinstance(tags, list):
         tags = []
 
@@ -105,11 +120,11 @@ def _doc(row: dict) -> dict:
         "label": label,
         "description": desc,
         "tags": [str(t) for t in tags],
-        "category": tax.get("category") or "",
-        "category_label": tax.get("category_label") or "",
+        "category": _tax("category") or "",
+        "category_label": _tax("category_label", "categoryLabel") or "",
         "source": meta.get("source") or "",
-        "author": tax.get("author") or "",
-        "license": tax.get("license") or "",
+        "author": _tax("author") or "",
+        "license": _tax("license") or "",
         "homepage": meta.get("homepage") or "",
         "verified": bool(meta.get("verified")),
         "use_count": int(meta.get("use_count") or 0),

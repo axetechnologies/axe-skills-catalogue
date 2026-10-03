@@ -211,3 +211,116 @@ def render_doc(slug: str) -> str | None:
     p = DOCS_DIR / f"{slug}.md"
     return _FRAME.format(title=html.escape(slug), css=_CSS,
                          body=render_markdown(p.read_text(errors="replace")))
+
+
+# The browsable catalogue index (/docs/skills). It renders a static shell and
+# fetches the public, versioned read API client-side — /v1/skills (browse) and
+# /v1/skills/search?q= (ranked). No server-side data and no new dependency, so it
+# works on the read-only public origin exactly as the markdown docs do. Category
+# chips are the known top categories; clicking one runs a ranked search for that
+# term. Each card links to /portal/<name> for the full skill.
+_BROWSE_CSS = _CSS + """
+.tools{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:1.2rem 0}
+#q{flex:1 1 260px;min-width:0;background:var(--panel);border:1px solid var(--line);
+border-radius:6px;color:var(--bone);padding:.6rem .8rem;font:inherit}
+#q:focus{outline:0;border-color:var(--oxblood)}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.2rem 0 1rem}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;
+color:var(--dim);padding:.28rem .7rem;font-size:.78rem;cursor:pointer}
+.chip:hover,.chip[aria-pressed=true]{color:var(--bone);border-color:var(--oxblood)}
+#count{color:var(--dim);font-size:.8rem;margin:.2rem 0 1rem}
+.grid{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.card{display:block;text-decoration:none;background:var(--panel);
+border:1px solid var(--line);border-left:3px solid var(--oxblood);border-radius:6px;
+padding:.8rem .9rem}
+.card:hover{border-color:var(--oxblood)}
+.card .nm{font-weight:600;color:var(--bone);word-break:break-word}
+.card .ds{color:var(--dim);font-size:.85rem;margin:.35rem 0 0;
+display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card .mt{margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap}
+.badge{font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);
+border:1px solid var(--line);border-radius:3px;padding:.05rem .32rem}
+"""
+
+# Known top categories (from the catalogue's own category counts). Seeded rather
+# than aggregated so the page needs no extra endpoint; a chip runs a ranked search.
+_TOP_CATEGORIES = [
+    "software-development", "security", "productivity", "research", "devops",
+    "data-science", "autonomous-ai-agents", "creative", "media", "social-media",
+    "communication", "blockchain", "vision-ai", "mlops", "networking",
+]
+
+
+def render_skills_browse() -> str:
+    chips = "".join(
+        f"<button class=chip data-cat=\"{html.escape(c)}\">{html.escape(c.replace('-', ' '))}</button>"
+        for c in _TOP_CATEGORIES)
+    body = (
+        "<h1>Skills catalogue</h1>"
+        "<p>Reusable, model-agnostic playbooks — curated by AXE and mirrored from the "
+        "community. Search the catalogue or pick a category; open a skill for its full "
+        "instructions.</p>"
+        "<div class=tools><input id=q type=search autocomplete=off "
+        "placeholder='Search skills — e.g. code review, baidu, kubernetes'></div>"
+        f"<div class=chips>{chips}</div>"
+        "<p id=count>Loading…</p>"
+        "<div id=grid class=grid></div>"
+        "<script>" + _BROWSE_JS + "</script>"
+    )
+    return _FRAME.format(title="Skills", css=_BROWSE_CSS, body=body)
+
+
+# Client logic: fetch the public read API, render cards, debounce search, and let
+# a category chip run a ranked search for that term. Defensive about the record
+# shape (array | {results} | {skills}) and about where a field lives (top-level
+# metadata vs metadata.taxonomy), so it renders both first-party and community rows.
+_BROWSE_JS = r"""
+(function(){
+  var grid=document.getElementById('grid'),count=document.getElementById('count'),
+      q=document.getElementById('q');
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+  function field(r,ks){var m=r.metadata||{},t=m.taxonomy||{};
+    for(var i=0;i<ks.length;i++){var k=ks[i];
+      if(t[k])return t[k]; if(m[k])return m[k]; if(r[k])return r[k];}
+    return '';}
+  function desc(r){var m=r.metadata||{},t=m.taxonomy||{},c=r.content;
+    if(t.description)return t.description;
+    if(typeof c==='string'){try{var o=JSON.parse(c);if(o&&o.description)return o.description;}catch(e){}}
+    return m.description||r.description||'';}
+  function card(r){
+    var name=r.name||'', cat=field(r,['category_label','categoryLabel','category']),
+        src=field(r,['source']);
+    var a=document.createElement('a');a.className='card';
+    a.href='/portal/'+encodeURIComponent(name).replace(/%3A/gi,':');
+    var mt='';
+    if(cat)mt+='<span class=badge>'+esc(String(cat).replace(/-/g,' '))+'</span>';
+    if(src)mt+='<span class=badge>'+esc(src)+'</span>';
+    a.innerHTML='<div class=nm>'+esc(name)+'</div>'+
+      '<div class=ds>'+esc(desc(r))+'</div>'+(mt?'<div class=mt>'+mt+'</div>':'');
+    return a;}
+  function rows(data){return Array.isArray(data)?data:(data&&(data.results||data.skills))||[];}
+  function render(data,label){
+    var rs=rows(data);grid.innerHTML='';
+    rs.forEach(function(r){grid.appendChild(card(r));});
+    count.textContent=rs.length?(rs.length+' skill'+(rs.length>1?'s':'')+(label?' · '+label:'')):('no skills'+(label?' for '+label:''));
+  }
+  function load(url,label){
+    count.textContent='Loading…';
+    fetch(url,{headers:{'Accept':'application/json'}}).then(function(r){return r.json();})
+      .then(function(d){render(d,label);})
+      .catch(function(){count.textContent='catalogue unreachable — try again';});
+  }
+  function browse(){load('/v1/skills?limit=60','browsing');}
+  function search(term){term=term.trim();
+    if(!term){browse();return;}
+    load('/v1/skills/search?q='+encodeURIComponent(term)+'&limit=60','"'+term+'"');}
+  var t;q.addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){
+    document.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed','false');});
+    search(q.value);},250);});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){
+    document.querySelectorAll('.chip').forEach(function(x){x.setAttribute('aria-pressed','false');});
+    c.setAttribute('aria-pressed','true');var cat=c.getAttribute('data-cat');
+    q.value=cat.replace(/-/g,' ');search(cat.replace(/-/g,' '));});});
+  browse();
+})();
+"""
