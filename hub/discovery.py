@@ -1,8 +1,10 @@
 """robots.txt, llms.txt and the agent discovery document.
 
-The same catalogue answers on several hostnames (one tunnel, several names). Search engines should index one of them, so
-robots.txt is host-aware: the canonical host welcomes crawlers to the skill pages and keeps them off the API, every other
-host asks crawlers to stay out. API clients and agents are not crawlers and are not affected by robots.txt.
+The same catalogue answers on several hostnames (one tunnel, several names). Search engines should index one of them:
+people-facing HTML (/docs, /portal) on every other name answers a permanent redirect to the canonical host, so links and
+rankings consolidate there, and robots.txt on those names stays open for crawlers (a crawler that is blocked cannot follow
+a redirect) but keeps them off the API. The API itself answers on every name, unchanged: agents and clients are not crawlers
+and are not affected by robots.txt or the redirect.
 Cloudflare may prepend its managed content-signals comment block to whatever this returns.
 """
 from __future__ import annotations
@@ -18,17 +20,24 @@ def clean_host(raw: str | None) -> str:
     return (raw or "").split(",")[0].strip().lower().split(":")[0]
 
 
+LOCAL_HOSTS = {"", "localhost", "127.0.0.1", "[::1]", "::1"}
+
+
+def canonical_redirect(host: str | None, path: str, query: str = "") -> str | None:
+    """Where people-facing HTML on a non-canonical hostname should permanently redirect to, or None."""
+    h = clean_host(host)
+    if h == CANONICAL_HOST or h in LOCAL_HOSTS:
+        return None
+    if not (path == "/docs" or path.startswith("/docs/") or path == "/portal" or path.startswith("/portal/")):
+        return None
+    return "https://" + CANONICAL_HOST + path + (("?" + query) if query else "")
+
+
 def render_robots(host: str | None) -> str:
     host = clean_host(host)
-    if host != CANONICAL_HOST:
-        return (
-            "# This name serves the same catalogue as https://" + CANONICAL_HOST + "/ .\n"
-            "# Crawlers: please index the canonical host only. Agents and API clients: see https://" + CANONICAL_HOST + "/llms.txt\n"
-            "User-agent: *\n"
-            "Disallow: /\n"
-        )
+    canonical = host == CANONICAL_HOST
     lines = [
-        "# AXE Skills. Crawlers may index the skill pages. Agents should use the API described in /llms.txt, not crawl.",
+        "# AXE Skills. Crawlers may index the skill pages (the canonical host is " + CANONICAL_HOST + "). Agents should use the API described in /llms.txt, not crawl.",
         "User-agent: *",
         "Content-Signal: search=yes, ai-input=yes, ai-train=no",
         "Allow: /",
@@ -39,7 +48,7 @@ def render_robots(host: str | None) -> str:
         "Disallow: /portal",
         "Disallow: /docs/skills?",
     ]
-    if SITEMAP_ENABLED:
+    if SITEMAP_ENABLED and canonical:
         lines += ["", f"Sitemap: https://{CANONICAL_HOST}/sitemap.xml"]
     return "\n".join(lines) + "\n"
 

@@ -286,15 +286,24 @@ def test_no_route_returns_500(srv):
         assert code != 500, f"GET {path} returned 500"
 
 
-def test_robots_txt_is_host_aware(srv):
-    code, body = srv.get("/robots.txt", {"Host": "skills.axe.onl"})
-    assert code == 200 and "Allow: /" in body and "Disallow: /v1/" in body
-    assert "Content-Signal: search=yes, ai-input=yes, ai-train=no" in body
-    for host in ("operator.axe.onl", "operator.axetechnologies.ca", "127.0.0.1:8742"):
+def test_robots_txt_is_open_everywhere_but_keeps_crawlers_off_the_api(srv):
+    for host in ("skills.axe.onl", "operator.axe.onl", "operator.axetechnologies.ca", "127.0.0.1:8742"):
         code, body = srv.get("/robots.txt", {"Host": host})
-        assert code == 200 and "Disallow: /\n" in body and "Allow:" not in body
-    code, body = srv.get("/robots.txt", {"Host": "skills.axe.onl", "X-Forwarded-Host": "operator.axe.onl"})
-    assert "Disallow: /\n" in body and "Allow:" not in body
+        assert code == 200 and "Allow: /" in body and "Disallow: /v1/" in body and "Disallow: /\n" not in body
+        assert "Content-Signal: search=yes, ai-input=yes, ai-train=no" in body
+
+
+def test_html_on_other_hostnames_redirects_to_the_canonical_host_and_the_api_does_not(srv):
+    import http.client
+    def raw(path, host):
+        port = int(srv.base.rsplit(":", 1)[1]); c = http.client.HTTPConnection("127.0.0.1", port)
+        c.request("GET", path, headers={"Host": host}); r = c.getresponse(); r.read(); return r.status, r.getheader("Location")
+    assert raw("/docs/skills", "operator.axe.onl") == (301, "https://skills.axe.onl/docs/skills")
+    assert raw("/docs/skills?q=pdf", "operator.axetechnologies.ca") == (301, "https://skills.axe.onl/docs/skills?q=pdf")
+    assert raw("/docs/skills", "skills.axe.onl")[0] == 200
+    assert raw("/docs/skills", "127.0.0.1:8742")[0] == 200
+    for path in ("/v1/skills", "/llms.txt", "/robots.txt", "/healthz"):
+        assert raw(path, "operator.axe.onl")[0] == 200, path
 
 
 def test_robots_sitemap_line_only_when_enabled(srv, monkeypatch):

@@ -483,6 +483,17 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send_text(200, json.dumps(discovery.render_agent_doc(host), indent=2), "application/json")
             return
 
+        if path == "/docs" or path.startswith("/docs/") or path == "/portal" or path.startswith("/portal/"):
+            from hub import discovery
+            to = discovery.canonical_redirect(self.headers.get("X-Forwarded-Host") or self.headers.get("Host"), path, parsed.query)
+            if to:
+                self.send_response(301)
+                self.send_header("Location", to)
+                self.send_header("Cache-Control", "public, max-age=3600")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+
         if path.startswith("/docs/skills"):
             # The browsable catalogue index: a static shell that fetches the public
             # read API (/v1/skills, /v1/skills/search) client-side — search box,
