@@ -284,3 +284,31 @@ def test_no_route_returns_500(srv):
     ]:
         code, _ = srv.get(path)
         assert code != 500, f"GET {path} returned 500"
+
+
+def test_robots_txt_is_host_aware(srv):
+    code, body = srv.get("/robots.txt", {"Host": "skills.axe.onl"})
+    assert code == 200 and "Allow: /" in body and "Disallow: /v1/" in body
+    assert "Content-Signal: search=yes, ai-input=yes, ai-train=no" in body
+    for host in ("operator.axe.onl", "operator.axetechnologies.ca", "127.0.0.1:8742"):
+        code, body = srv.get("/robots.txt", {"Host": host})
+        assert code == 200 and "Disallow: /\n" in body and "Allow:" not in body
+    code, body = srv.get("/robots.txt", {"Host": "skills.axe.onl", "X-Forwarded-Host": "operator.axe.onl"})
+    assert "Disallow: /\n" in body and "Allow:" not in body
+
+
+def test_robots_sitemap_line_only_when_enabled(srv, monkeypatch):
+    from hub import discovery
+    assert "Sitemap:" not in discovery.render_robots("skills.axe.onl")
+    monkeypatch.setattr(discovery, "SITEMAP_ENABLED", True)
+    assert "Sitemap: https://skills.axe.onl/sitemap.xml" in discovery.render_robots("skills.axe.onl")
+    assert "Sitemap:" not in discovery.render_robots("operator.axe.onl")
+
+
+def test_llms_txt_and_agent_doc_name_only_real_endpoints(srv):
+    code, body = srv.get("/llms.txt", {"Host": "skills.axe.onl"})
+    assert code == 200 and "/v1/tools/find" in body and "https://skills.axe.onl" in body
+    code, doc = srv.get("/.well-known/agent-skills.json", {"Host": "operator.axe.onl"})
+    assert code == 200 and doc["base_url"] == "https://operator.axe.onl" and doc["auth"] == "none"
+    for url in doc["endpoints"].values():
+        assert url.startswith("https://operator.axe.onl/")
