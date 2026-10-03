@@ -96,6 +96,16 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_text(self, code: int, body: str, ctype: str = "text/plain; charset=utf-8") -> None:
+        data = body.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self._cors()
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _send_html(self, code: int, body: str) -> None:
         data = body.encode()
         self.send_response(code)
@@ -227,6 +237,17 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send_json(403, {"error": "missing tenant"})
                 return
             self._send_json(200, self._page(self.registry.audit(tenant)))
+            return
+
+        if path in ("/robots.txt", "/llms.txt", "/.well-known/agent-skills.json"):
+            from hub import discovery
+            host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+            if path == "/robots.txt":
+                self._send_text(200, discovery.render_robots(host))
+            elif path == "/llms.txt":
+                self._send_text(200, discovery.render_llms_txt(host), "text/markdown; charset=utf-8")
+            else:
+                self._send_text(200, json.dumps(discovery.render_agent_doc(host), indent=2), "application/json")
             return
 
         if path.startswith("/docs/skills"):
