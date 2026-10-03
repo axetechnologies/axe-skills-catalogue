@@ -247,30 +247,32 @@ def test_portal_missing_skill_returns_404(srv):
     assert code == 404
 
 
-def test_docs_skills_route_removed(srv):
-    # /docs/skills is the operator browse UI and is not part of the public
-    # surface. It must return 404, not 500.
+def test_docs_skills_browse_page(srv):
+    # /docs/skills is the browsable catalogue index: a static HTML shell that
+    # fetches the public read API client-side. It serves 200 HTML (no tenant),
+    # not the old 404.
     code, body = srv.get("/docs/skills")
-    assert code == 404
-    assert code != 500
+    assert code == 200
+    assert "<!doctype" in body.lower()
+    assert "id=grid" in body and "v1/skills/search" in body
 
 
-def test_docs_skills_search_route_removed(srv):
+def test_docs_skills_prefix_served(srv):
+    # The whole /docs/skills* prefix serves the browse shell (client-side routing
+    # does the rest), so a sub-path returns 200, not 404.
     code, _ = srv.get("/docs/skills/search?q=log")
-    assert code == 404
-    assert code != 500
+    assert code == 200
 
 
 def test_root_redirects(srv):
-    # / redirects to /docs/skills, but /docs/skills returns 404 -- the
-    # redirect itself must not be a 500.
+    # / redirects to /docs/skills (the browsable index). The redirect must not be
+    # a 500, and following it lands on the 200 browse page.
     req = urllib.request.Request(srv.base + "/", method="GET")
     try:
-        urllib.request.urlopen(req)
+        resp = urllib.request.urlopen(req)
+        assert resp.status == 200  # followed redirect → browse page
     except urllib.error.HTTPError as e:
         assert e.code != 500
-    except urllib.error.URLError:
-        pass  # redirect followed to 404 -- still not 500
 
 
 def test_no_route_returns_500(srv):

@@ -230,13 +230,15 @@ class _Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/docs/skills"):
-            # The operator browse UI (/docs/skills) requires the private
-            # operator portal and is not part of the public catalogue surface.
-            # Use GET /v1/skills or GET /v1/skills/search for catalogue access.
-            self._send_json(404, {
-                "error": "not found",
-                "hint": "use GET /v1/skills or GET /v1/skills/search",
-            })
+            # The browsable catalogue index: a static shell that fetches the public
+            # read API (/v1/skills, /v1/skills/search) client-side — search box,
+            # category chips, and skill cards linking to /portal/<name>. No tenant
+            # or private portal needed (same public surface as the markdown docs).
+            try:
+                from hub.axeskills_docs_surface import render_skills_browse
+            except ImportError:
+                from axeskills_docs_surface import render_skills_browse
+            self._send_html(200, render_skills_browse())
             return
 
         # The repo's markdown docs. Reachable on the public origin without a
