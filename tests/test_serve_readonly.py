@@ -224,10 +224,10 @@ def test_audit_returns_404_in_read_only(srv):
 
 # --- HTML surface ----------------------------------------------------------
 
-def test_healthz_reports_evals_false(srv):
+def test_healthz_is_status_only(srv):
     code, body = srv.get("/healthz")
     assert code == 200
-    assert body.get("evals") is False
+    assert body == {"status": "ok"}
 
 
 def test_portal_root_returns_html(srv):
