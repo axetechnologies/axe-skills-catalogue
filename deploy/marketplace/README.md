@@ -17,3 +17,13 @@ Clients call `https://api.0perator.co/v1/skills*` and `/v1/tools/find` with thei
 
 Files: `com.axe.skills-write.plist`, `com.axe.skills-gateway.plist` (LaunchAgents), `Caddyfile.snippet` (edge).
 Rollout order: write hub, gateway, smoke with a real token, then the Caddy block. Rollback: remove the Caddy block, `launchctl bootout` both jobs.
+
+## Status on JL2 (2026-11-05)
+Live: both LaunchAgents loaded (loopback :8743 gateway, :8744 write hub, DB `~/.axe/hub/hub-user.db`), and the Caddy block is in
+`~/.axe/operator-gateway/Caddyfile` (backup `Caddyfile.bak-20261105-pre-marketplace`). Caddy's admin API is off, so a Caddyfile change
+takes `launchctl kickstart -k gui/$UID/co.0perator.edge`. Public check: `api.0perator.co/v1/skills/<name>` with no token is 401.
+Gateway runs with `AXE_MKT_LEGACY_BETA=1` until AuthGate (memjar/authgate `feature/operator-subscription`) is deployed and
+`authgate operator subscribe --backfill-active` has run; then set it to 0 in the gateway plist and `launchctl kickstart -k gui/$UID/com.axe.skills-gateway`.
+The drive on 11/05 used a stub identity service with the real hubs (no sign-in token on this box): subscriber find/publish/mine, no-subscription 403,
+tenant isolation, publish forced quarantined. Not yet driven with a real AuthGate token.
+Rollback: restore the Caddyfile backup and kickstart the edge, then `launchctl bootout gui/$UID/com.axe.skills-gateway` and `.../com.axe.skills-write`.
