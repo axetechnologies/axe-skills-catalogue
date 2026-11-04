@@ -57,3 +57,8 @@ Published skills sit in the write db (`hub-user.db`) as `u-<hash>` with `quarant
 
 Trust rule: promotion is the only way a user skill becomes verified. It is run by the owner, offline, against the catalogue db; the gateway
 strips `verified` and `quarantined` from client metadata and forces them, so no client request can set either.
+## Audit log rotation
+The gateway appends one JSON line per call to `~/.axe/logs/skills-gateway-audit.jsonl` (hashed identity only) and never rotates it.
+`newsyslog.skills-gateway.conf` rotates it at 5 MB, keeps 14 compressed generations, and the gateway reopens the file on each write, so no restart is needed.
+Install (needs sudo, so James runs it): `sudo cp deploy/marketplace/newsyslog.skills-gateway.conf /etc/newsyslog.d/skills-gateway.conf`, then check with `sudo newsyslog -nv -f /etc/newsyslog.d/skills-gateway.conf` (dry run).
+Rollback: `sudo rm /etc/newsyslog.d/skills-gateway.conf`. Rotated files stay under `~/.axe/logs/` as `skills-gateway-audit.jsonl.N.gz`.
