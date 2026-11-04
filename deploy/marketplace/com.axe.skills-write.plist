@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.axe.skills-write</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/bin/python3</string><string>-m</string><string>hub.serve</string></array>
+  <key>WorkingDirectory</key><string>/Users/jl2/.axe/services/axe-skills-catalogue</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>AXE_HUB_READ_ONLY</key><string>0</string>
+    <key>AXE_HUB_HOST</key><string>127.0.0.1</string>
+    <key>AXE_HUB_PORT</key><string>8744</string>
+    <key>AXE_HUB_DB</key><string>/Users/jl2/.axe/hub/hub-user.db</string>
+  </dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>StandardOutPath</key><string>/Users/jl2/.axe/logs/skills-write.log</string>
+  <key>StandardErrorPath</key><string>/Users/jl2/.axe/logs/skills-write.err</string>
+</dict></plist>

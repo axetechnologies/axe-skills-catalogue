@@ -1,0 +1,1102 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AXe Operator Skills Hub",
+    "version": "1.0.0",
+    "description": "Read-only skill discovery for agents."
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Liveness probe.",
+        "description": "HEAD is supported and returns the same status with no body.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/find": {
+      "get": {
+        "summary": "Rank the catalogue for a natural-language task.",
+        "description": "The agent-facing search route. `count: 0` is a real answer meaning no tool matched.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The task, in natural language. `task` is accepted as an alias."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verified",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1",
+                "true",
+                "yes"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            },
+            "description": "Page size. A non-integer or a value below 1 is rejected with 400 rather than replaced. A value above 50 is capped, and the response then carries limit_capped: true."
+          },
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "description": "Echoed so a caller that fired several searches can tell the answers apart."
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "The page size actually applied."
+                    },
+                    "limit_capped": {
+                      "type": "boolean",
+                      "description": "Present only when the requested limit was reduced to the maximum."
+                    },
+                    "searched_literally": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Present only when every word of the query was a common filler word in the catalogue. The query was then matched literally instead of being stripped to nothing, which would have returned a count of 0 that reads as 'no such tool'."
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "count",
+                    "limit",
+                    "results"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request, e.g. a non-integer limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Verb refused. A read-only origin accepts GET, HEAD and OPTIONS.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/categories": {
+      "get": {
+        "summary": "Categories present in this tenant's catalogue.",
+        "parameters": [
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/skills": {
+      "get": {
+        "summary": "List published skills.",
+        "description": "Paged: default 200, maximum 1000 (larger values are capped). limit<=0 returns an empty array. Without envelope the body is a bare array; with ?envelope=1 it is {object, data, limit, offset, total, has_more}.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "maximum": 1000
+            },
+            "description": "Page size, 1..1000, default 200."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            },
+            "description": "Rows to skip, in name order."
+          },
+          {
+            "name": "envelope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "description": "1 returns the paged envelope instead of a bare array."
+          },
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tenant_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "format": {
+                            "type": "string"
+                          },
+                          "checksum": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "type": "object"
+                          },
+                          "created_by": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "yanked_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "card": {
+                            "type": "object",
+                            "description": "Render-ready view of the row. Optional keys are omitted -- never blank -- when the upstream never supplied them.",
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "description": "The upstream's own name for the skill, falling back to the qualified name."
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "verified": {
+                                "type": "boolean"
+                              },
+                              "use_count": {
+                                "type": "integer"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "category": {
+                                "type": "string"
+                              },
+                              "category_label": {
+                                "type": "string"
+                              },
+                              "category_source": {
+                                "type": "string",
+                                "enum": [
+                                  "upstream",
+                                  "derived"
+                                ],
+                                "description": "Where the category came from. 'upstream' is the publisher's own classification; 'derived' is ours, inferred for a skill that arrived uncategorised."
+                              },
+                              "author": {
+                                "type": "string"
+                              },
+                              "license": {
+                                "type": "string"
+                              },
+                              "homepage": {
+                                "type": "string"
+                              },
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "At most 8."
+                              },
+                              "install": {
+                                "type": "string",
+                                "description": "Command that fetches this skill. Omitted when the server cannot tell its own public URL."
+                              }
+                            },
+                            "required": [
+                              "title",
+                              "source",
+                              "verified",
+                              "use_count"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "object": {
+                          "type": "string",
+                          "enum": [
+                            "list"
+                          ]
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tenant_id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "string"
+                              },
+                              "format": {
+                                "type": "string"
+                              },
+                              "checksum": {
+                                "type": "string"
+                              },
+                              "metadata": {
+                                "type": "object"
+                              },
+                              "created_by": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "yanked_at": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "card": {
+                                "type": "object",
+                                "description": "Render-ready view of the row. Optional keys are omitted -- never blank -- when the upstream never supplied them.",
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "description": "The upstream's own name for the skill, falling back to the qualified name."
+                                  },
+                                  "source": {
+                                    "type": "string"
+                                  },
+                                  "verified": {
+                                    "type": "boolean"
+                                  },
+                                  "use_count": {
+                                    "type": "integer"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "category": {
+                                    "type": "string"
+                                  },
+                                  "category_label": {
+                                    "type": "string"
+                                  },
+                                  "category_source": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upstream",
+                                      "derived"
+                                    ],
+                                    "description": "Where the category came from. 'upstream' is the publisher's own classification; 'derived' is ours, inferred for a skill that arrived uncategorised."
+                                  },
+                                  "author": {
+                                    "type": "string"
+                                  },
+                                  "license": {
+                                    "type": "string"
+                                  },
+                                  "homepage": {
+                                    "type": "string"
+                                  },
+                                  "tags": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "At most 8."
+                                  },
+                                  "install": {
+                                    "type": "string",
+                                    "description": "Command that fetches this skill. Omitted when the server cannot tell its own public URL."
+                                  }
+                                },
+                                "required": [
+                                  "title",
+                                  "source",
+                                  "verified",
+                                  "use_count"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "object",
+                        "data",
+                        "limit",
+                        "offset",
+                        "total",
+                        "has_more"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/skills/search": {
+      "get": {
+        "summary": "Substring search over skill names and titles.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Text to look for."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "maximum": 1000
+            },
+            "description": "Page size, 1..1000, default 200."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Rows to skip."
+          },
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tenant_id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "format": {
+                        "type": "string"
+                      },
+                      "checksum": {
+                        "type": "string"
+                      },
+                      "metadata": {
+                        "type": "object"
+                      },
+                      "created_by": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "yanked_at": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "card": {
+                        "type": "object",
+                        "description": "Render-ready view of the row. Optional keys are omitted -- never blank -- when the upstream never supplied them.",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "description": "The upstream's own name for the skill, falling back to the qualified name."
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "verified": {
+                            "type": "boolean"
+                          },
+                          "use_count": {
+                            "type": "integer"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "category_label": {
+                            "type": "string"
+                          },
+                          "category_source": {
+                            "type": "string",
+                            "enum": [
+                              "upstream",
+                              "derived"
+                            ],
+                            "description": "Where the category came from. 'upstream' is the publisher's own classification; 'derived' is ours, inferred for a skill that arrived uncategorised."
+                          },
+                          "author": {
+                            "type": "string"
+                          },
+                          "license": {
+                            "type": "string"
+                          },
+                          "homepage": {
+                            "type": "string"
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "At most 8."
+                          },
+                          "install": {
+                            "type": "string",
+                            "description": "Command that fetches this skill. Omitted when the server cannot tell its own public URL."
+                          }
+                        },
+                        "required": [
+                          "title",
+                          "source",
+                          "verified",
+                          "use_count"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Case-insensitive substring match over the skill name and its stored metadata, ordered by name and paged like the list. A miss is an empty array."
+      }
+    },
+    "/v1/skills/{name}": {
+      "get": {
+        "summary": "Fetch one skill by its fully qualified name.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The name is both the primary key and the address; it is not URL-shortened."
+          },
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact version. Only the current version of a skill has a stored body."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such route or skill.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/skills/{name}/versions": {
+      "get": {
+        "summary": "Version history for one skill.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such route or skill.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost"
+    }
+  ]
+}
