@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.axe.skills-gateway</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/bin/python3</string><string>-m</string><string>hub.gateway</string></array>
+  <key>WorkingDirectory</key><string>/Users/jl2/.axe/services/axe-skills-catalogue</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>AXE_MKT_VERIFY_URL</key><string>http://192.168.1.43:8011/operator/verify</string>
+    <key>AXE_MKT_LEGACY_BETA</key><string>0</string>
+    <key>AXE_MKT_PORT</key><string>8743</string>
+    <key>AXE_MKT_WRITE_DB</key><string>/Users/jl2/.axe/hub/hub-user.db</string>
+    <key>AXE_MKT_AUDIT</key><string>/Users/jl2/.axe/logs/skills-gateway-audit.jsonl</string>
+  </dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>StandardOutPath</key><string>/Users/jl2/.axe/logs/skills-gateway.log</string>
+  <key>StandardErrorPath</key><string>/Users/jl2/.axe/logs/skills-gateway.err</string>
+</dict></plist>
