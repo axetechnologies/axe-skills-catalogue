@@ -38,3 +38,9 @@ Real-token drive through `https://api.0perator.co` (minted throwaway tokens, sin
 publish forced quarantined; an active account with no subscription got 403 `subscription_required` on find and publish; no token 401.
 Canary skills left behind (no delete route): `canary-gateway-drive@0.0.1` (stub tenant), `canary-real-drive@0.0.1` (tenant of mcp-e2e@axe.test);
 test accounts `drive-nosub@axe.test` (rejected) and `mcp-e2e@axe.test`.
+
+## Audit log rotation
+The gateway appends one JSON line per call to `~/.axe/logs/skills-gateway-audit.jsonl` (hashed identity only) and never rotates it.
+`newsyslog.skills-gateway.conf` rotates it at 5 MB, keeps 14 compressed generations, and the gateway reopens the file on each write, so no restart is needed.
+Install (needs sudo, so James runs it): `sudo cp deploy/marketplace/newsyslog.skills-gateway.conf /etc/newsyslog.d/skills-gateway.conf`, then check with `sudo newsyslog -nv -f /etc/newsyslog.d/skills-gateway.conf` (dry run).
+Rollback: `sudo rm /etc/newsyslog.d/skills-gateway.conf`. Rotated files stay under `~/.axe/logs/` as `skills-gateway-audit.jsonl.N.gz`.
