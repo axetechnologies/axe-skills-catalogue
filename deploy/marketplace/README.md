@@ -38,3 +38,22 @@ Real-token drive through `https://api.0perator.co` (minted throwaway tokens, sin
 publish forced quarantined; an active account with no subscription got 403 `subscription_required` on find and publish; no token 401.
 Canary skills left behind (no delete route): `canary-gateway-drive@0.0.1` (stub tenant), `canary-real-drive@0.0.1` (tenant of mcp-e2e@axe.test);
 test accounts `drive-nosub@axe.test` (rejected) and `mcp-e2e@axe.test`.
+
+## Reviewing user skills (offline, owner-run)
+Published skills sit in the write db (`hub-user.db`) as `u-<hash>` with `quarantined: true, verified: false, source: user`. Review them with the
+`review` group in `hub/cli.py`; it opens the databases directly and is never exposed by the gateway or either hub.
+
+    python3 -m hub.cli review list    --db <write db>
+    python3 -m hub.cli review show    --db <write db> <tenant> <name> <version>
+    python3 -m hub.cli review promote --db <write db> <tenant> <name> <version> --to <catalogue db> --tenant <reviewed tenant> --reviewer <who>
+    python3 -m hub.cli review reject  --db <write db> <tenant> <name> <version> --reviewer <who>
+
+- `list` and `show` open the write db read-only. `list` prints tenant, name, version, size in bytes and created time for unyanked quarantined user skills.
+- `promote` copies the skill into the catalogue db under the reviewed tenant (created if missing) with `verified: true`, `quarantined: false`,
+  `reviewed_by`, `reviewed_at` and `promoted_from` (`tenant/name@version`), and writes a `promote` audit row. It refuses anything not quarantined,
+  anything yanked, content over 256 KB, a source and target that are the same file, and a name+version already in the target (exit 2), so a
+  re-run changes nothing. The source row is left as it was.
+- `reject` yanks a quarantined skill in the write db and records the reviewer in the audit log. It refuses anything not quarantined.
+
+Trust rule: promotion is the only way a user skill becomes verified. It is run by the owner, offline, against the catalogue db; the gateway
+strips `verified` and `quarantined` from client metadata and forces them, so no client request can set either.
