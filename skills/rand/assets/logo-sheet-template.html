@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Logo specimen sheet</title>
+<!-- Replace BRAND, the MARKS array and the fonts. Everything else is neutral. -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#fbfbf8; --fg:#1b211d; --muted:#5d675f; --line:#dcdfd8; --card:#fff; --brand:#333f38; --accent:#c9462f; --accent-dark:#e6c46f;
+  --display:"Archivo Black","Arial Black",system-ui,sans-serif; --text:"Archivo",system-ui,sans-serif; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#121613; --fg:#eef0ea; --muted:#a2aba3; --line:#2b322d; --card:#1a201c; color-scheme:dark; } }
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--text)}
+.wrap{max-width:1120px;margin:0 auto;padding:40px 16px 64px}
+h1{font:400 clamp(32px,5.4vw,56px)/1.02 var(--display);margin:0 0 12px}
+.lede{max-width:62ch;color:var(--muted);line-height:1.55;margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0}
+.stage{--ink:#1b211d;--acc:var(--accent);--bg2:#fbfbf8;background:var(--bg2);color:var(--ink);display:grid;place-items:center;aspect-ratio:4/3;padding:20px}
+.lockup{display:flex;flex-direction:column;align-items:center;gap:14px}.lockup svg{width:min(46%,150px);height:auto}
+.word{font:400 22px/1 var(--display);color:var(--ink)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
+.chip{aspect-ratio:1.2;display:grid;place-items:center}.chip svg{width:40px;height:40px}
+.dark{--ink:#fbfbf8;--acc:var(--accent-dark);--bg2:#1b211d;background:var(--bg2)}
+.brand{--ink:#fbfbf8;--acc:var(--accent-dark);--bg2:var(--brand);background:var(--bg2)}
+.paper{--ink:#1b211d;--acc:var(--accent);--bg2:#fbfbf8;background:var(--bg2)}
+.blur svg{filter:blur(2.2px)}.fav svg{width:16px;height:16px}
+.meta{padding:14px 18px 18px}.meta h2{margin:0 0 6px;font:400 19px/1.15 var(--display)}.meta p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.tags{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.tags span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:3px 7px;border-radius:99px}
+.cap{display:grid;grid-template-columns:repeat(4,1fr);font-size:11px;color:var(--muted);text-align:center;padding:6px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BRAND logo concepts</h1>
+  <p class="lede">One idea per mark. Each is shown large, reversed, on brand colour, blurred and at 16px, the standard tests.</p>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+// Each mark: draw on a 100x100 grid. Use var(--ink) for the main shape, var(--acc) for the accent, var(--bg2) for knock-outs.
+var BRAND = "Brand";
+var MARKS = [
+  { name: "Example drop", genre: "Symbol", idea: "A drop that is also the letter j.", svg: function () { return '<path d="M50 6C50 6 17 46 17 64A33 33 0 0 0 83 64C83 46 50 6 50 6Z" fill="var(--ink)"/><circle cx="62" cy="66" r="7" fill="var(--acc)"/>'; } }
+];
+var grid = document.getElementById("grid");
+function mark(m) { return '<svg viewBox="0 0 100 100" role="img" aria-label="' + m.name + '">' + m.svg() + '</svg>'; }
+MARKS.forEach(function (m, i) {
+  var c = document.createElement("article"); c.className = "card";
+  c.innerHTML = '<div class="stage"><div class="lockup">' + mark(m) + '<div class="word">' + BRAND + '</div></div></div>' +
+    '<div class="chips"><div class="chip dark">' + mark(m) + '</div><div class="chip brand">' + mark(m) + '</div><div class="chip paper blur">' + mark(m) + '</div><div class="chip paper fav">' + mark(m) + '</div></div>' +
+    '<div class="cap"><span>Reversed</span><span>On brand</span><span>Blur</span><span>16px</span></div>' +
+    '<div class="meta"><div class="tags"><span>' + String(i + 1).padStart(2, "0") + '</span><span>' + m.genre + '</span></div><h2>' + m.name + '</h2><p>' + m.idea + '</p></div>';
+  grid.appendChild(c);
+});
+</script>
+</body>
+</html>
