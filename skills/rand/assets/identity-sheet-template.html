@@ -1,0 +1,194 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'></head><body style='margin:0'><title>JM Cut Paper Marks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600;800&family=Caveat:wght@700&family=Bodoni+Moda:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one flagship per section. A large hero on the left, the specification on the right, then the system row, then the mockups. */
+:root { --bg:#f4f3ee; --fg:#1b211d; --muted:#5d675f; --line:#d9dcd3; --card:#fff; --brand:#26332b;
+  --display:"Archivo Black","Arial Black",system-ui,sans-serif; --text:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#101411; --fg:#eef0ea; --muted:#a2aba3; --line:#2b322d; --card:#181d19; color-scheme:dark; } }
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--text)}
+.wrap{max-width:1180px;margin:0 auto;padding:40px max(16px,env(safe-area-inset-right,0px)) 80px max(16px,env(safe-area-inset-left,0px))}
+h1{font:400 clamp(34px,5.6vw,60px)/1 var(--display);margin:0 0 14px;letter-spacing:-.01em}
+.lede{max-width:70ch;color:var(--muted);line-height:1.55;margin:0 0 14px;font-size:16px}.lede b{color:var(--fg)}
+.crit{margin:22px 0 48px;padding:18px 20px;border-left:4px solid var(--fg);background:var(--card);max-width:880px}
+.crit h2{margin:0 0 8px;font:600 12px/1 var(--text);letter-spacing:.16em;text-transform:uppercase}
+.crit ul{margin:0;padding-left:18px;line-height:1.55;color:var(--muted);font-size:14.5px}
+section.flag{margin:0 0 72px;padding-top:28px;border-top:2px solid var(--fg)}
+.flag header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;margin-bottom:6px}
+.flag h2{font:400 clamp(24px,3.4vw,34px)/1.05 var(--display);margin:0}
+.tag{font:600 11px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:99px}
+.idea{max-width:72ch;color:var(--muted);line-height:1.55;margin:0 0 20px}
+.top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:stretch}
+@media(max-width:860px){.top{grid-template-columns:minmax(0,1fr)}.hero{min-height:260px;padding:20px}.spec{padding:16px}.sys{grid-template-columns:repeat(2,minmax(0,1fr))}.ctx{grid-template-columns:minmax(0,1fr)}}
+.hero,.spec,.cell,.mock{min-width:0}.lock-v>div,.lock-h>div{max-width:100%}.lock-v svg,.lock-h svg{width:100%;height:auto;display:block}
+.lock-v{max-width:100%;min-width:0}.hero .lock-v{width:min(340px,100%)}.hero .lock-v>div{width:100%!important}.word{text-align:center}.hero svg{filter:drop-shadow(2.5px 3.5px 0 rgba(0,0,0,.2))}.hero{--ink:var(--i);background:#fbfbf8;color:var(--ink);border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;min-height:360px;padding:36px}
+.spec{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px;display:grid;gap:14px;align-content:start;font-size:13.5px;line-height:1.5}
+.spec h3{margin:0;font:600 11px/1 var(--text);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.sw{display:flex;gap:8px;flex-wrap:wrap}.sw div{width:52px}.sw i{display:block;height:34px;border-radius:3px;border:1px solid rgba(0,0,0,.12)}.sw span{display:block;font-size:10.5px;margin-top:4px;color:var(--muted);letter-spacing:.02em}
+.spec ul{margin:0;padding-left:16px;color:var(--muted)}.spec li{margin:0 0 4px}
+.typespec{font-size:13px}.typespec b{font-weight:600}
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px}
+.cell{border:1px solid var(--line);border-radius:6px;min-height:150px;display:grid;place-items:center;padding:14px;position:relative;background:#fbfbf8;color:var(--ink);--ink:var(--i)}
+.cell small{position:absolute;left:10px;bottom:7px;font:600 10px/1 var(--text);letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+.cell.dark{background:#161b18;--ink:#f4f3ee;--acc:var(--acc2);--pk:#161b18}.cell.brand{background:var(--brand);--ink:#f4f3ee;--acc:var(--acc2);--pk:#26332b}.hero,.cell,.mock{--pk:#fbfbf8}.cell.dark{--pk:#161b18}.cell.brand{--pk:#26332b}
+.cell.mono{--ink:#000}.cell svg .guides{display:none}
+.icon{width:104px;height:104px;border-radius:24px;display:grid;place-items:center;background:var(--brand);box-shadow:0 8px 20px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.2)}
+.sizes{display:flex;align-items:flex-end;gap:14px}.blurred svg{filter:blur(2.4px)}
+.ctx{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;margin-top:14px}
+.mock{border:1px solid var(--line);border-radius:6px;padding:22px;background:linear-gradient(180deg,#e6e8e2,#d4d8cf);display:grid;place-items:center;min-height:230px;position:relative;overflow:hidden}
+.mock small{position:absolute;left:12px;bottom:8px;font:600 10px/1 var(--text);letter-spacing:.12em;text-transform:uppercase;color:#4b554d}
+.van{position:relative;width:min(100%,340px);height:150px;background:linear-gradient(180deg,#fff,#e7e9e4);border-radius:26px 54px 14px 14px;box-shadow:0 10px 22px rgba(0,0,0,.25),inset 0 -8px 0 rgba(0,0,0,.07);display:grid;place-items:center;color:var(--ink);--ink:var(--i)}
+.van:before{content:"";position:absolute;right:10px;top:12px;width:64px;height:44px;background:linear-gradient(135deg,#9db3c4,#506b80);border-radius:8px 30px 6px 6px}
+.van .wh{position:absolute;bottom:-14px;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#666,#111 70%);box-shadow:0 0 0 5px #f1f1ee}
+.van .stripe{position:absolute;left:0;right:0;bottom:30px;height:8px;background:var(--acc)}
+.van .art{position:absolute;left:26px;top:16px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}.van .art .word{font-size:11px!important}
+.sign{width:min(100%,260px);display:grid;justify-items:center}
+.sign .board{width:100%;aspect-ratio:4/3;background:#fbfbf8;border:6px solid var(--ink);border-radius:6px;display:grid;place-items:center;box-shadow:0 12px 20px rgba(0,0,0,.25);color:var(--ink);--ink:var(--i);gap:6px;padding:10px;align-content:center;text-align:center;font:600 12px/1.2 var(--text)}
+.sign .stakes{display:flex;gap:120px}.sign .stakes i{width:10px;height:56px;background:linear-gradient(90deg,#b98d55,#8a6633);box-shadow:0 4px 6px rgba(0,0,0,.25)}
+.card2{width:min(100%,300px);aspect-ratio:1.75;background:#fbfbf8;border-radius:5px;box-shadow:0 14px 26px rgba(0,0,0,.28);transform:rotate(-4deg);display:grid;place-items:center;color:var(--ink);--ink:var(--i);position:relative}
+.card2 .meta{position:absolute;left:16px;bottom:12px;font:400 10px/1.4 var(--text);color:#5d675f}
+.inv{width:min(100%,330px);background:#fff;border-radius:3px;box-shadow:0 12px 24px rgba(0,0,0,.22);padding:18px 18px 40px;color:var(--ink);--ink:var(--i)}
+.inv .row{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--acc);padding-bottom:10px}
+.inv .lines i{display:block;height:7px;background:#e6e7e2;margin-top:10px;border-radius:2px}
+.inv .lines i:nth-child(2){width:70%}.inv .lines i:nth-child(4){width:55%}
+.lock-h{display:flex;align-items:center;gap:12px}.lock-v{display:flex;flex-direction:column;align-items:center;gap:10px}
+.word{white-space:nowrap;line-height:1;color:var(--ink)}
+.foot{margin-top:24px;color:var(--muted);font-size:14px;max-width:72ch;line-height:1.55}
+</style>
+
+<div class="wrap">
+  <h1>Twelve marks, from the archive</h1>
+  <p class="lede">This time I looked first. I went through all 132 of Paul Rand's logos, 120 book covers, every poster, and a third of his paintings, and wrote down what is actually there before drawing anything. What I saw was not gloss or icons. It was flat colour, cut paper, one big simple shape, letters cut from blocks, a single visual substitution, hand lettering beside exact geometry, tiny characters built from a few shapes, and repetition with one exception.</p>
+  <div class="crit"><h2>What each mark borrows, from a mark I looked at</h2>
+    <ul>
+      <li><b>Little Painters</b> and <b>Painter</b>: letters that turn into people (Dunhill's hatted capitals, the Shuredge characters).</li>
+      <li><b>Mr JM</b>: a face drawn from the letters (the Esquire face, two circles and three lines).</li>
+      <li><b>Swatch Wall</b>: repetition with an exception (the Earth Day hearts, the American Express squares).</li>
+      <li><b>Ink Blot</b>, <b>Block Pair</b>, <b>Can Top</b>, <b>Giant jm</b>: a blot, colour blocks (Harcourt Brace), rings (Consolidated Cigar, Columbus) and extreme scale (the Dada and Leger posters).</li>
+      <li><b>Level</b>, <b>Roller J</b>, <b>One Stroke</b>, <b>Stir Sticks</b>: the four strongest from the last round, redrawn flat on one grid.</li>
+    </ul></div>
+  <div id="root"></div>
+  <p class="foot">Tell me which two you want taken to finished artwork. I will redraw the letterforms by hand, build the full file set (SVG, PDF, favicon and app icons), and write the usage page.</p>
+</div>
+
+
+  <p class="foot">Tell me the three you like best. I will redraw them by hand on a proper grid, test them in more places and write the usage page.</p>
+</div>
+
+  <p class="foot">Tell me which of these feels closest. I will refine that one by hand and look again at the archive for the details, before anything is called finished.</p>
+</div>
+<script>
+/* Flat, solid colour, cut-paper layering. Cap line y=16, baseline y=84. Letters are constructed from strokes, never set in a font. */
+var INK = "#14110f", RED = "#e4202b", BLUE = "#1f4fa3", YEL = "#f5c400", PINK = "#f4a6b0", GRN = "#1e7a3f", CREAM = "#f6e3c8", STONE = "#e4e0d4", TAN = "#d9ac6c";
+var KO = "var(--pk,#fbfbf8)";
+function B(f, v) { return f ? "#000" : v; }
+var uid = 0;
+var CL = function (k) { return '<clipPath id="' + k + 'cl"><rect x="-60" y="16" width="320" height="68"/></clipPath>'; };
+function Jp(x, c, w) { return '<path d="M' + x + ' 16V60A17 17 0 0 1 ' + (x - 34) + ' 60" fill="none" stroke="' + c + '" stroke-width="' + (w || 14) + '"/>'; }
+function Mp(x0, c, k, w, sp) { sp = sp || 68; return '<g clip-path="url(#' + k + 'cl)"><path d="M' + x0 + ' 84V16L' + (x0 + sp / 2) + ' 70L' + (x0 + sp) + ' 16V84" fill="none" stroke="' + c + '" stroke-width="' + (w || 14) + '" stroke-linejoin="miter" stroke-miterlimit="14"/></g>'; }
+function hat(cx, y, w, c, f, rot) { var h = 17, by = y + h; return '<g transform="rotate(' + (rot || 0) + ' ' + cx + ' ' + by + ')"><polygon points="' + (cx - w / 2) + ',' + by + ' ' + (cx + w / 2) + ',' + by + ' ' + (cx + w / 2 - 6) + ',' + y + ' ' + (cx - w / 2 + 6) + ',' + y + '" fill="' + B(f, c) + '"/><path d="M' + (cx - w / 2 + 6) + ' ' + y + 'L' + (cx + 4) + ' ' + by + '" stroke="' + KO + '" stroke-width="1.8" fill="none"/></g>'; }
+
+var CONCEPTS = [
+  { name: "Little Painters", tag: "Letters wearing paper hats (after Dunhill)", ink: INK, acc: RED, word: "type",
+    idea: "J and M in heavy letters, each wearing a folded paper painter's hat. The letters become two painters, and the name is the whole picture. Rand did the same with Dunhill, where tall capitals wear small hats and turn into men.",
+    swatches: [[INK, "Black"], [RED, "Red hat"], [BLUE, "Blue hat"], ["#f4f3ee", "Paper"]], type: "No font: letters built from a 20-unit stroke. 'Painting' in Archivo 600, wide tracking.",
+    notes: ["Hats are one trapezoid and one crease, nothing else.", "Two hat colours, so J and M read as two people.", "Flat version: black letters, black hats with a paper crease."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs>' + Jp(52, B(f, INK), 20) + Mp(100, B(f, INK), k, 20, 56) + hat(52, -1, 46, RED, f, -7) + hat(128, -1, 50, BLUE, f, 6); } },
+  { name: "Mr JM", tag: "A face made of the initials (after Esquire)", ink: INK, acc: RED, word: "hand",
+    idea: "A painter's face in four marks: two eyes, a J for the nose, an M for the moustache, and a folded paper hat. The whole name is the face. Rand drew the Esquire face with two circles and three lines, and left the viewer to see it.",
+    swatches: [[PINK, "Pink"], [INK, "Black"], [RED, "Hat"], ["#ffffff", "Eyes"]], type: "No font. 'painting' in a loose hand script, as Rand did on Colorforms and Borax.",
+    notes: ["One pink square holds the whole face.", "The J is the nose, drawn at the same weight as the moustache stroke.", "The hat breaks out of the square, as cut paper would."],
+    svg: function (k, f) { return '<polygon points="60,18 110,18 104,3 66,3" fill="' + B(f, RED) + '"/><path d="M66 3L85 18" stroke="' + KO + '" stroke-width="1.6" fill="none"/><rect x="43" y="16" width="84" height="80" fill="' + B(f, PINK) + '"/><circle cx="68" cy="44" r="10" fill="' + KO + '"/><circle cx="102" cy="44" r="10" fill="' + KO + '"/><circle cx="71" cy="45" r="4" fill="' + B(f, INK) + '"/><circle cx="105" cy="45" r="4" fill="' + B(f, INK) + '"/><path d="M86 38V58A7 7 0 0 1 72 58" fill="none" stroke="' + B(f, INK) + '" stroke-width="6"/><path d="M60 88V70L85 82L110 70V88" fill="none" stroke="' + B(f, INK) + '" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="12"/>'; } },
+  { name: "Swatch Wall", tag: "A wall of tiles, with the name painted in", ink: INK, acc: RED, word: "type",
+    idea: "A field of identical pale squares, a wall waiting for paint, with the squares of J painted red and the squares of M painted blue. Repetition does the work, and the painted exception is the name. It is the logic of Rand's Earth Day hearts and of the blue-square field in his American Express book.",
+    swatches: [[RED, "Red"], [BLUE, "Blue"], [STONE, "Bare wall"], [INK, "Black"]], type: "No font. Letters are 5 by 7 squares. 'Painting' in Archivo 600.",
+    notes: ["15 by 9 squares, 8 units with a 1.6-unit gap.", "Letters sit on rows 2 to 8 and columns 3 to 7 and 9 to 13.", "Flat version: only the painted squares, in black."],
+    svg: function (k, f) { var J = ["00111", "00010", "00010", "00010", "00010", "10010", "01100"], M = ["10001", "11011", "10101", "10001", "10001", "10001", "10001"]; var out = '', P = 9.6, ox = 13, oy = 6.8; for (var r = 0; r < 9; r++) for (var c = 0; c < 15; c++) { var jr = r - 1, jc = c - 2, mc = c - 8, col = null; if (jr >= 0 && jr < 7) { if (jc >= 0 && jc < 5 && J[jr][jc] === '1') col = RED; else if (mc >= 0 && mc < 5 && M[jr][mc] === '1') col = BLUE; } if (col) out += '<rect x="' + (ox + c * P).toFixed(1) + '" y="' + (oy + r * P).toFixed(1) + '" width="8" height="8" fill="' + B(f, col) + '"/>'; else if (!f) out += '<rect x="' + (ox + c * P).toFixed(1) + '" y="' + (oy + r * P).toFixed(1) + '" width="8" height="8" fill="' + STONE + '"/>'; } return out; } },
+  { name: "Ink Blot", tag: "A brushed blot with the name cut out", ink: INK, acc: RED, word: "hand",
+    idea: "One black blot of paint with two drips, and J and M cut out of it in paper. The shape is a splash, the letters are the clean edge inside it. After the ink-blot covers (Dr. Modesto, Painting and Reality), where a single dark shape does all the work.",
+    swatches: [[INK, "Black"], ["#f4f3ee", "Paper"], [RED, "Accent"]], type: "No font. 'painting' in a brush hand.",
+    notes: ["The blot is one path with two drips of different length.", "Letters are the same 14-unit J and M, scaled to 0.62.", "No second colour is needed; add one red dot if a colour is wanted."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><path d="M18 46C10 24 36 10 70 14C104 6 148 16 154 42C158 60 142 66 136 70C142 84 134 96 124 92C118 90 120 78 112 76C100 74 90 82 80 80C72 90 62 98 54 92C46 86 52 76 44 72C30 68 24 62 18 46Z" fill="' + B(f, INK) + '"/><g transform="translate(30.8 17) scale(.62)">' + Jp(56, KO) + Mp(88, KO, k) + '</g>'; } },
+  { name: "Block Pair", tag: "Letters cut from colour blocks (after Harcourt Brace)", ink: INK, acc: RED, word: "bodoni",
+    idea: "J is a paper cut-out in a blue block and M in a red block, joined by a strip of masking tape across the seam. Two flat colours and one strip of yellow: a name, a trade and a job done, with no drawing at all.",
+    swatches: [[BLUE, "Blue"], [RED, "Red"], [YEL, "Tape"], ["#f4f3ee", "Paper"]], type: "No font. 'Painting' in Bodoni Moda Bold Italic, in the manner of his book titles.",
+    notes: ["Two blocks of 68 by 80 units, the letters cut out in paper.", "The tape overlaps both blocks and carries three perforation lines.", "Flat version: two black blocks, paper letters, a paper tape."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><rect x="10" y="10" width="68" height="80" fill="' + B(f, BLUE) + '"/><rect x="92" y="10" width="68" height="80" fill="' + B(f, RED) + '"/><g transform="translate(11 9) scale(.85)">' + Jp(56, KO, 16) + '</g><g transform="translate(45.25 9) scale(.85)">' + Mp(70, KO, k, 16, 50) + '</g><g transform="rotate(-9 85 50)"><rect x="66" y="40" width="38" height="20" fill="' + B(f, YEL) + '"/>' + (f ? '' : '<path d="M72 45H98M72 50H98M72 55H98" stroke="#000" stroke-opacity=".22" stroke-width="1.2"/>') + '</g>'; } },
+  { name: "Level", tag: "Initials in a spirit level", ink: INK, acc: RED, word: "type",
+    idea: "J on the left, a bubble dead centre, M on the right: the level reads true. The name is made of the tool that proves a line is straight, and the bubble is the only colour.",
+    swatches: [[INK, "Black"], [RED, "Bubble"], ["#f4f3ee", "Paper"]], type: "No font. 'Painting' in Archivo 600.",
+    notes: ["A black bar with three paper windows on one centre line.", "The letters are the same J and M at 0.5 and 0.46.", "The bubble sits exactly on the centre of the vial."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><rect x="4" y="22" width="162" height="56" rx="14" fill="' + B(f, INK) + '"/><rect x="14" y="32" width="40" height="36" rx="8" fill="' + KO + '"/><rect x="62" y="41" width="46" height="18" rx="9" fill="' + KO + '"/><rect x="116" y="32" width="40" height="36" rx="8" fill="' + KO + '"/><circle cx="85" cy="50" r="6.2" fill="' + B(f, RED) + '"/><path d="M76 44V56M94 44V56" stroke="' + INK + '" stroke-width="1.4"/><g transform="translate(14.5 25) scale(.5)">' + Jp(56, INK) + '</g><g transform="translate(84.8 29) scale(.42)">' + Mp(88, INK, k) + '</g>'; } },
+  { name: "Can Top", tag: "Rings of a paint can, with the name in the centre", ink: INK, acc: RED, word: "courier",
+    idea: "A paint can seen from above: black rim, paper ring, a disc of red paint, and JM in the middle with the two ears and the wire handle. Concentric circles, as in Rand's cigar and Columbus marks, and the most recognised object in the trade.",
+    swatches: [[INK, "Black"], [RED, "Paint"], ["#f4f3ee", "Paper"]], type: "No font. 'painting' in a typewriter face, small, as Rand used under a big shape.",
+    notes: ["Three circles of radius 45, 38 and 31, one centre.", "Ears and handle are the only lines.", "Flat version: the same rings in black and paper."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><path d="M37 50A48 48 0 0 1 133 50" fill="none" stroke="' + B(f, INK) + '" stroke-width="2.6"/><circle cx="85" cy="50" r="45" fill="' + B(f, INK) + '"/><circle cx="85" cy="50" r="38" fill="' + KO + '"/><circle cx="85" cy="50" r="31" fill="' + B(f, RED) + '"/><circle cx="37" cy="50" r="5" fill="' + B(f, INK) + '"/><circle cx="133" cy="50" r="5" fill="' + B(f, INK) + '"/><g transform="translate(53 32) scale(.36)">' + Jp(56, KO) + Mp(88, KO, k) + '</g>'; } },
+  { name: "Giant jm", tag: "Scale: a huge lowercase pair on a strip of paper", ink: INK, acc: RED, word: "courier",
+    idea: "Huge heavy lowercase j and m on a torn strip of yellow paper, with a small typewriter line under them. The red dot of the j is a drop of paint. After the posters where one enormous word does everything and a tiny line of type finishes it.",
+    swatches: [[INK, "Black"], [RED, "Dot"], [YEL, "Paper strip"]], type: "No font. 'painting' in a typewriter face.",
+    notes: ["Strokes are 22 units, with butt ends and true semicircle arches.", "The strip sits behind the letters and is tilted 4 degrees.", "Flat version: black letters on a paper strip."],
+    svg: function (k, f) { return '<g transform="rotate(-4 85 60)"><rect x="0" y="52" width="170" height="30" fill="' + B(f, YEL) + '"/></g><path d="M40 40V74C40 92 20 94 12 82" fill="none" stroke="' + B(f, INK) + '" stroke-width="22"/><circle cx="40" cy="16" r="12" fill="' + B(f, RED) + '"/><path d="M80 40V92M80 64A18 18 0 0 1 116 64V92M116 64A18 18 0 0 1 152 64V92" fill="none" stroke="' + B(f, INK) + '" stroke-width="22"/>'; } },
+  { name: "Painter", tag: "A character from five shapes (after Shuredge)", ink: INK, acc: RED, word: "hand",
+    idea: "A little painter: a triangle for the body with JM on the bib, a circle head, a paper hat and a roller on a thin arm. Thin line limbs on flat colour, as in Shuredge's chef and owl. Friendly on a van, and the name is in the middle of it.",
+    swatches: [[RED, "Overalls"], [BLUE, "Roller"], [CREAM, "Face"], [INK, "Line"]], type: "No font. 'painting' in a hand script.",
+    notes: ["Body, head, hat, roller and bucket: five shapes.", "Arms and legs are one 1.8-unit line.", "Flat version: all shapes black, the face and hat paper."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><polygon points="85,38 60,84 110,84" fill="' + B(f, RED) + '"/><g transform="translate(66.4 56) scale(.22)">' + Jp(56, KO) + Mp(88, KO, k) + '</g><circle cx="85" cy="26" r="11" fill="' + (f ? KO : CREAM) + '" stroke="' + B(f, INK) + '" stroke-width="1.8"/><circle cx="81" cy="25" r="1.4" fill="' + B(f, INK) + '"/><circle cx="89" cy="25" r="1.4" fill="' + B(f, INK) + '"/><path d="M80 30Q85 34 90 30" fill="none" stroke="' + B(f, INK) + '" stroke-width="1.5"/><polygon points="72,17 98,17 94,4 76,4" fill="' + KO + '" stroke="' + B(f, INK) + '" stroke-width="1.8"/><path d="M76 4L85 17" stroke="' + B(f, INK) + '" stroke-width="1.4" fill="none"/><path d="M68 62L48 52M102 62L120 70M76 84V98M94 84V98" stroke="' + B(f, INK) + '" stroke-width="1.8" stroke-linecap="round" fill="none"/><rect x="30" y="40" width="26" height="10" rx="5" transform="rotate(-24 43 45)" fill="' + B(f, BLUE) + '"/><polygon points="116,68 134,68 131,84 119,84" fill="' + B(f, YEL) + '" stroke="' + B(f, INK) + '" stroke-width="1.6"/>'; } },
+  { name: "Roller J", tag: "Letterform fused with a roller", ink: INK, acc: RED, word: "type",
+    idea: "The roller is the top of the J. Its wire bends down into the stem and the hook. A painter reads it at once, and the M beside it is built from the same stroke.",
+    swatches: [[INK, "Black"], [RED, "Red"], ["#f4f3ee", "Paper"]], type: "No font. 'Painting' in Archivo 600.",
+    notes: ["The head is 26 units tall with full round ends and is the only red.", "The wire is a 4-unit line that meets the stem at a right angle.", "Stem and M share one 14-unit stroke."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><path d="M72 21H80V40H48V32" fill="none" stroke="' + B(f, INK) + '" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M48 30V60A17 17 0 0 1 14 60" fill="none" stroke="' + B(f, INK) + '" stroke-width="14"/><rect x="10" y="8" width="62" height="26" rx="13" fill="' + B(f, RED) + '"/>' + Mp(96, B(f, INK), k); } },
+  { name: "One Stroke", tag: "Letterform: one continuous line", ink: INK, acc: RED, word: "hand",
+    idea: "J and M drawn in one unbroken stroke, as a brush would draw them. The stem of the J is also the first leg of the M, so the two letters share a line. The stroke ends in a single drip.",
+    swatches: [[INK, "Black"], [RED, "Drip"], ["#f4f3ee", "Paper"]], type: "No font. 'painting' in a loose hand script.",
+    notes: ["One path, 14 units wide, mitred corners clipped flat at the cap line.", "The hook is a true half circle of radius 17.", "The drip is the only red and sits on the baseline."],
+    svg: function (k, f) { return '<defs>' + CL(k) + '</defs><g clip-path="url(#' + k + 'cl)"><path d="M33 60A18 18 0 0 0 69 60V16L103 70L137 16V84" fill="none" stroke="' + B(f, INK) + '" stroke-width="14" stroke-linejoin="miter" stroke-miterlimit="14"/></g><path d="M130 84H144V90A7 7 0 0 1 130 90Z" fill="' + B(f, RED) + '"/>'; } },
+  { name: "Stir Sticks", tag: "Letterform made of paint-stirring sticks", ink: INK, acc: RED, word: "type",
+    idea: "Both letters are drawn with wooden stirring sticks, each dipped a different colour. Every painter has a drawer of them. It is the most honest object in the trade.",
+    swatches: [[TAN, "Wood"], [RED, "Red"], [BLUE, "Blue"], [YEL, "Yellow"]], type: "No font. 'Painting' in Archivo 600.",
+    notes: ["Sticks are 13 units wide with full round ends.", "The dip is the last quarter of every stick.", "Flat version: all black."],
+    svg: function (k, f) { function st(d, c) { return '<path d="' + d + '" pathLength="100" fill="none" stroke="' + B(f, TAN) + '" stroke-width="13" stroke-linecap="round"/>' + (f ? '' : '<path d="' + d + '" pathLength="100" fill="none" stroke="' + c + '" stroke-width="13" stroke-linecap="round" stroke-dasharray="25 75" stroke-dashoffset="-75"/>'); } return st('M56 22V60A17 17 0 0 1 22 60', YEL) + st('M88 22V78', RED) + st('M88 22L122 68', BLUE) + st('M156 22L122 68', YEL) + st('M156 22V78', RED); } }
+];
+
+function mark(c, k, cls) { return '<svg viewBox="0 0 170 100" role="img" aria-label="' + c.name + ' mark" class="' + (cls || '') + '">' + c.svg(k, cls === 'flat') + '</svg>'; }
+function word(c) {
+  var w = { type: 'font-family:Archivo,sans-serif;font-weight:600;letter-spacing:.34em;font-size:14px', hand: 'font-family:Caveat,cursive;font-weight:700;font-size:30px;letter-spacing:.02em', bodoni: 'font-family:\'Bodoni Moda\',serif;font-style:italic;font-weight:700;font-size:22px', courier: 'font-family:\'Courier New\',Courier,monospace;font-weight:700;font-size:13px;letter-spacing:.3em' }[c.word];
+  return '<div class="word" style="' + w + '">' + (c.word === 'hand' ? 'painting' : c.word === 'courier' ? 'painting' : 'Painting') + '</div>';
+}
+function lockV(c, w, cls) { return '<div class="lock-v"><div style="width:' + w + 'px">' + mark(c, 'k' + (++uid), cls) + '</div>' + word(c) + '</div>'; }
+var GUIDE = '<g class="guides" stroke="#8a97a6" stroke-width=".5" stroke-dasharray="2 2" fill="none"><path d="M0 16H170M0 84H170M85 0V100"/></g>';
+
+var root = document.getElementById('root');
+CONCEPTS.forEach(function (c, i) {
+  var sec = document.createElement('section'); sec.className = 'flag';
+  sec.setAttribute('style', '--i:' + c.ink + ';--acc:' + c.acc + ';--acc2:#ff6a5a');
+  var sw = c.swatches.map(function (s) { return '<div><i style="background:' + s[0] + '"></i><span>' + s[1] + '<br>' + s[0] + '</span></div>'; }).join('');
+  var notes = c.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('');
+  var iconMark = '<div class="icon" style="background:#f4f3ee"><div style="width:84px">' + mark(c, 'k' + (++uid)) + '</div></div>';
+  var small = '<div class="sizes"><div style="width:96px">' + mark(c, 'k' + (++uid)) + '</div><div style="width:48px">' + mark(c, 'k' + (++uid)) + '</div><div style="width:26px">' + mark(c, 'k' + (++uid)) + '</div></div>';
+  sec.innerHTML =
+    '<header><h2>' + (i + 1) + '. ' + c.name + '</h2><span class="tag">' + c.tag + '</span></header><p class="idea">' + c.idea + '</p>' +
+    '<div class="top"><div class="hero">' + lockV(c, 340) + '</div><div class="spec"><h3>Colour</h3><div class="sw">' + sw + '</div><h3>Type</h3><div class="typespec">' + c.type + '</div><h3>Construction</h3><ul>' + notes + '</ul></div></div>' +
+    '<div class="sys">' +
+      '<div class="cell"><div style="width:120px">' + mark(c, 'k' + (++uid)) + '</div><small>Mark</small></div>' +
+      '<div class="cell mono">' + lockV(c, 130, 'flat') + '<small>One colour</small></div>' +
+      '<div class="cell dark">' + lockV(c, 130) + '<small>On black</small></div>' +
+      '<div class="cell brand" style="--brand:#e9e4d8">' + iconMark + '<small>App icon</small></div>' +
+      '<div class="cell">' + small + '<small>96 · 48 · 26 px</small></div>' +
+      '<div class="cell blurred"><div style="width:140px">' + mark(c, 'k' + (++uid)) + '</div><small>Blur test</small></div>' +
+    '</div>' +
+    '<div class="ctx">' +
+      '<div class="mock"><div class="van"><div class="art"><div style="width:112px">' + mark(c, 'k' + (++uid)) + '</div>' + word(c) + '</div><div class="stripe"></div><div class="wh" style="left:34px"></div><div class="wh" style="right:40px"></div></div><small>Van</small></div>' +
+      '<div class="mock"><div class="sign"><div class="board"><div style="width:140px">' + mark(c, 'k' + (++uid)) + '</div>' + word(c) + '<div style="opacity:.7">Fresh coat in progress</div></div><div class="stakes"><i></i><i></i></div></div><small>Yard sign</small></div>' +
+      '<div class="mock"><div class="card2"><div style="width:150px">' + mark(c, 'k' + (++uid)) + '</div><div class="meta">jmpainting.co<br>Interior · Exterior · Cottages</div></div><small>Business card</small></div>' +
+      '<div class="mock"><div class="inv"><div class="row"><div style="width:100px">' + mark(c, 'k' + (++uid)) + '</div><div style="font:600 11px var(--text);letter-spacing:.14em;text-transform:uppercase">Invoice</div></div><div class="lines"><i></i><i></i><i></i><i></i></div></div><small>Invoice</small></div>' +
+    '</div>';
+  root.appendChild(sec);
+  var hs = sec.querySelector('.hero svg'); if (hs) hs.insertAdjacentHTML('afterbegin', GUIDE);
+});
+
+</script>
+</body></html>
