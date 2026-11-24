@@ -230,9 +230,9 @@ footer .wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:va
   .sortbox span{flex:1 1 100%}
   .sortbox label{flex:1 1 40%; min-width:0}
   .sortbox select{flex:1; min-width:0; max-width:none}
-  .kinds{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); width:100%}
-  .kind{border-bottom:1px solid var(--rule)}
-  .kind:nth-child(2n){border-right:0}
+  .kinds{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); width:100%}
+  .kind{padding:0 var(--s2); display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .kind small{margin:0}
   .right .req{padding:0 var(--s2)}
 }
 @media (max-width: 400px){

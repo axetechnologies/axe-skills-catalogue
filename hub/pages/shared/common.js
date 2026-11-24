@@ -30,9 +30,15 @@
   };
 
   /* what the server embedded when it rendered the page: true figures, used only when a live call fails */
-  var FB = {};
-  try { FB = JSON.parse(doc.getElementById("hub-fallback").textContent) || {}; } catch (e) { FB = {}; }
-  Hub.fallback = FB;
+  /* read on first use: this script loads in <head>, before the data block exists */
+  var parsed = null;
+  function fb() {
+    if (parsed === null) {
+      try { parsed = JSON.parse(doc.getElementById("hub-fallback").textContent) || {}; } catch (e) { parsed = {}; }
+    }
+    return parsed;
+  }
+  Object.defineProperty(Hub, "fallback", { get: fb });
   Hub.offline = false;
 
   Hub.get = function (path) {
@@ -51,20 +57,20 @@
 
   Hub.kinds = function () {
     return Hub.get("/v1/kinds").then(function (j) { return j.kinds; }, function () {
-      down(); return FB.kinds || [];
+      down(); return fb().kinds || [];
     });
   };
   Hub.stats = function () {
     return Hub.get("/assets/stats.json").then(function (j) { return j; }, function () {
       down();
-      var s = FB.stats || {};
-      s.verified_records = FB.verified || [];
+      var s = fb().stats || {};
+      s.verified_records = fb().verified || [];
       return s;
     });
   };
   Hub.categories = function (kind) {
     return Hub.get("/v1/categories?" + enc({ kind: kind })).then(function (j) { return j.categories; }, function () {
-      down(); return (FB.categories || {})[kind] || [];
+      down(); return (fb().categories || {})[kind] || [];
     });
   };
 
@@ -128,7 +134,7 @@
         });
     return req.then(function (r) { r.offline = false; return r; }, function () {
       down();
-      var all = ((FB.sample || {})[o.kind] || []).concat(o.kind === "skill" ? FB.verified || [] : []).map(Hub.norm)
+      var all = ((fb().sample || {})[o.kind] || []).concat(o.kind === "skill" ? fb().verified || [] : []).map(Hub.norm)
         .filter(function (r) { return match(r, q, o.category); });
       return { rows: all.slice(offset, offset + limit), total: all.length, more: offset + limit < all.length, offline: true };
     });
