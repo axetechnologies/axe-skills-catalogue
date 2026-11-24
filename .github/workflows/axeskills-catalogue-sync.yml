@@ -25,19 +25,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch the canonical snapshot
+      # The original live source (operator.axetechnologies.ca/docs/api) was retired: since 2026-10-20 it redirects to
+      # the hub, which has no export, and Cloudflare answers GitHub's runners with 403. The catalogue has not changed
+      # since that day (the hub's 65,738 rows were built from the same snapshot). So: fetch only when a live source is
+      # configured again (repo variable AXESKILLS_CATALOGUE_URL); otherwise verify the published snapshot is whole.
+      - name: Fetch a fresh snapshot, or take the published one
+        id: fetch
         env:
-          SOURCE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL || 'https://operator.axetechnologies.ca/docs/api' }}
+          SOURCE_URL: ${{ vars.AXESKILLS_CATALOGUE_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # --compressed matters: the origin serves a pre-gzipped catalogue, which
-          # turns a ~38MB transfer into ~7MB. Uncompressed, the send outlasts the
-          # origin's worker timeout and is killed mid-body -- and curl -f cannot
-          # catch that, because the 200 goes out long before the write is cut.
-          # The validation step below is what actually proves the file is whole.
-          curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills.json "$SOURCE_URL/skills.json"
-          curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills-meta.json "$SOURCE_URL/skills-meta.json"
-
+          if [ -n "${SOURCE_URL}" ]; then
+            # --compressed matters: the origin serves a pre-gzipped catalogue (~38 MB -> ~7 MB).
+            curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills.json "$SOURCE_URL/skills.json"
+            curl -fsSL --compressed --retry 5 --retry-delay 10 -o skills-meta.json "$SOURCE_URL/skills-meta.json"
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No live source configured (AXESKILLS_CATALOGUE_URL unset): verifying the published snapshot."
+            gh release download catalogue-latest -p skills.json -p skills-meta.json --clobber
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Refuse to publish an empty or malformed snapshot
         # An empty or truncated fetch is a failure shape, not a value -- it
         # must not overwrite a good release asset.
@@ -60,6 +68,7 @@ jobs:
           PY
 
       - name: Publish as a release asset
+        if: steps.fetch.outputs.fresh == 'true'
         # A stable release URL needs no deploy infra on our side and works
         # for an air-gapped consumer fetching once and caching the file.
         env:
