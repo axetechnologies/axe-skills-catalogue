@@ -16,6 +16,17 @@ lives in the private hub, not here -- this repo has no federation credentials
 repo owns is a durable, offline-fetchable copy of whatever the hub last
 published.
 
+## Status (2026-11-24): the live source is retired
+The canonical URL (`operator.axetechnologies.ca/docs/api`) stopped publishing on 2026-10-20: it now redirects to the
+hub, which serves the API but no export, and Cloudflare answers GitHub's runners with 403. The catalogue has not
+changed since (the hub's 65,738 rows were built from that same snapshot). The `catalogue-latest` release asset holds
+it: 65,738 records, `generatedAt` 2026-10-20.
+
+So the sync job now fetches only when the repository variable `AXESKILLS_CATALOGUE_URL` names a live source.
+Without it, the job downloads the published asset and runs the same checks (a list, at least 50,000 records, count
+equal to the manifest), and publishes nothing. It fails only when the published snapshot is missing or broken.
+To resume live syncing, set `AXESKILLS_CATALOGUE_URL` to a source that serves both files.
+
 ## Where durability comes from
 
 1. **`axeskills-catalogue-sync.yml`**, twice daily, fetches the live
