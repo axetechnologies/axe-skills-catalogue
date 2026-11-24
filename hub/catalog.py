@@ -18,6 +18,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from hub import kinds as kinds_mod
 from hub.discover import (
     W_CATEGORY, W_NAME_EXACT, W_NAME_TOKEN, W_SOURCE, W_TAG, W_DESC, BONUS_USE,
     BONUS_VERIFIED, tokens, _TOKEN,
@@ -138,8 +139,14 @@ class Catalog:
         self._local = threading.local()
         self._index: dict[str, _FindIndex] = {}
         self._index_lock = threading.Lock()
-        self._totals: dict[str, int] = {}
-        self._texts: dict[str, list[str]] = {}
+        self._totals: dict[tuple, int] = {}
+        self._texts: dict[tuple, tuple[list[str], list[int]]] = {}
+        self._first: dict[tuple, int | None] = {}
+        con = sqlite3.connect(f"file:{self._path}?mode=ro", uri=True)
+        try:
+            self.has_kinds = kinds_mod.present(con)
+        finally:
+            con.close()
 
     def _con(self) -> sqlite3.Connection:
         con = getattr(self._local, "con", None)
@@ -150,45 +157,75 @@ class Catalog:
             self._local.con = con
         return con
 
-    def total(self, tenant: str) -> int:
-        if tenant not in self._totals:
-            self._totals[tenant] = self._con().execute(
-                "SELECT COUNT(*) FROM skill_cards WHERE tenant_id = ?", (tenant,)).fetchone()[0]
-        return self._totals[tenant]
+    def _kind(self, kind: str) -> tuple[str, list] | None:
+        """The WHERE fragment selecting one kind of skill_cards c, or None when this database has none of it.
 
-    def list_page(self, tenant: str, limit: int, offset: int) -> list[str]:
-        if limit <= 0:
+        A database without the kind column holds skills only, so it answers the default kind as before.
+        """
+        if self.has_kinds:
+            return " AND c.kind = ?", [kind]
+        return ("", []) if kind == kinds_mod.DEFAULT else None
+
+    def total(self, tenant: str, kind: str = kinds_mod.DEFAULT) -> int:
+        if (tenant, kind) not in self._totals:
+            where = self._kind(kind)
+            self._totals[(tenant, kind)] = 0 if where is None else self._con().execute(
+                "SELECT COUNT(*) FROM skill_cards c WHERE c.tenant_id = ?" + where[0],
+                [tenant] + where[1]).fetchone()[0]
+        return self._totals[(tenant, kind)]
+
+    def _first_seq(self, tenant: str, kind: str) -> int | None:
+        """Where the kind's seq range starts: list pages are offsets into it."""
+        if (tenant, kind) not in self._first:
+            where = self._kind(kind)
+            self._first[(tenant, kind)] = None if where is None else self._con().execute(
+                "SELECT COALESCE(MIN(c.seq), 0) FROM skill_cards c WHERE c.tenant_id = ?" + where[0],
+                [tenant] + where[1]).fetchone()[0]
+        return self._first[(tenant, kind)]
+
+    def kinds(self, tenant: str) -> list[dict]:
+        return [{"kind": k, "label": kinds_mod.LABELS[k], "count": self.total(tenant, k),
+                 "list": f"/v1/skills?kind={k}"} for k in kinds_mod.KINDS]
+
+    def list_page(self, tenant: str, limit: int, offset: int, kind: str = kinds_mod.DEFAULT) -> list[str]:
+        first = self._first_seq(tenant, kind)
+        if limit <= 0 or first is None:
             return []
+        where = self._kind(kind)
         rows = self._con().execute(
             f"SELECT {_COLS}, c.card FROM skill_cards c JOIN skills s "
             "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
-            "WHERE c.tenant_id = ? AND c.seq >= ? AND c.seq < ? AND s.yanked_at IS NULL ORDER BY c.seq",
-            (tenant, offset, offset + limit)).fetchall()
+            "WHERE c.tenant_id = ? AND c.seq >= ? AND c.seq < ? AND s.yanked_at IS NULL" + where[0] +
+            " ORDER BY c.seq",
+            [tenant, first + offset, first + offset + limit] + where[1]).fetchall()
         return [_row_json(r[:9], r[9]) for r in rows]
 
-    def _search_texts(self, tenant: str) -> list[str]:
-        texts = self._texts.get(tenant)
+    def _search_texts(self, tenant: str, kind: str) -> tuple[list[str], list[int]]:
+        key = (tenant, kind)
+        texts = self._texts.get(key)
         if texts is None:
             with self._index_lock:
-                texts = self._texts.get(tenant)
+                texts = self._texts.get(key)
                 if texts is None:
                     # name and metadata, lower-cased, in seq (= name) order: a substring test over this
                     # list is the same match as `name LIKE %q% OR metadata LIKE %q%`, in C rather than
                     # in SQLite's row-by-row LIKE, which is what took ~120 ms over 65k rows.
-                    texts = self._texts[tenant] = [
-                        (n + "\x00" + m).lower() for n, m in self._con().execute(
-                            "SELECT s.name, s.metadata FROM skill_cards c JOIN skills s "
-                            "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
-                            "WHERE c.tenant_id = ? ORDER BY c.seq", (tenant,))]
+                    where = self._kind(kind)
+                    rows = [] if where is None else self._con().execute(
+                        "SELECT s.name, s.metadata, c.seq FROM skill_cards c JOIN skills s "
+                        "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
+                        "WHERE c.tenant_id = ?" + where[0] + " ORDER BY c.seq", [tenant] + where[1]).fetchall()
+                    texts = self._texts[key] = ([(n + "\x00" + m).lower() for n, m, _ in rows],
+                                                [seq for _, _, seq in rows])
         return texts
 
-    def search(self, tenant: str, q: str, limit: int, offset: int) -> list[str]:
+    def search(self, tenant: str, q: str, limit: int, offset: int, kind: str = kinds_mod.DEFAULT) -> list[str]:
         if limit <= 0:
             return []
         needle = q.lower()
-        texts = self._search_texts(tenant)
+        texts, seqs = self._search_texts(tenant, kind)
         hits = [i for i, t in enumerate(texts) if needle in t] if needle else range(len(texts))
-        page = list(hits[offset:offset + limit])
+        page = [seqs[i] for i in hits[offset:offset + limit]]
         if not page:
             return []
         marks = ",".join("?" * len(page))
@@ -216,45 +253,52 @@ class Catalog:
             (tenant, name)).fetchall()
         return [r[0] for r in rows] if rows else None
 
-    def categories(self, tenant: str) -> list[dict]:
+    def categories(self, tenant: str, kind: str = kinds_mod.DEFAULT) -> list[dict]:
+        where = self._kind(kind)
+        if where is None:
+            return []
         rows = self._con().execute(
-            "SELECT category, label, count FROM categories WHERE tenant_id = ? ORDER BY ord",
-            (tenant,)).fetchall()
+            "SELECT category, label, count FROM categories c WHERE tenant_id = ?" + where[0] + " ORDER BY ord",
+            [tenant] + where[1]).fetchall()
+        # A skill's find link is the one it always was; another kind's names its kind.
+        also = "" if kind == kinds_mod.DEFAULT else f"&kind={kind}"
         return [{"category": c, "label": lbl, "count": n,
-                 "find": f"/v1/tools/find?category={c}&q=<task>"} for c, lbl, n in rows]
+                 "find": f"/v1/tools/find?category={c}{also}&q=<task>"} for c, lbl, n in rows]
 
-    def _find_index(self, tenant: str) -> _FindIndex:
-        idx = self._index.get(tenant)
+    def _find_index(self, tenant: str, kind: str) -> _FindIndex:
+        key = (tenant, kind)
+        idx = self._index.get(key)
         if idx is None:
             with self._index_lock:
-                idx = self._index.get(tenant)
+                idx = self._index.get(key)
                 if idx is None:
-                    idx = self._index[tenant] = self._build_index(tenant)
+                    idx = self._index[key] = self._build_index(tenant, kind)
         return idx
 
     def warm(self, tenant: str) -> None:
-        self._find_index(tenant)
-        self._search_texts(tenant)
+        self._find_index(tenant, kinds_mod.DEFAULT)
+        self._search_texts(tenant, kinds_mod.DEFAULT)
 
-    def _build_index(self, tenant: str) -> _FindIndex:
+    def _build_index(self, tenant: str, kind: str) -> _FindIndex:
         rows = []
+        where = self._kind(kind)
+        if where is None:
+            return _FindIndex([])
         cur = self._con().execute(
-            "SELECT card FROM skill_cards WHERE tenant_id = ? ORDER BY seq", (tenant,))
-        for (card_json,) in cur:
+            "SELECT c.card, c.name FROM skill_cards c WHERE c.tenant_id = ?" + where[0] + " ORDER BY c.seq",
+            [tenant] + where[1])
+        for card_json, name in cur:
             c = json.loads(card_json)
             rows.append({
-                "name": None, "title": c.get("title", ""), "description": c.get("description", ""),
+                "name": name, "title": c.get("title", ""), "description": c.get("description", ""),
                 "tags": c.get("tags") or [], "category": c.get("category") or "other",
                 "category_label": c.get("category_label") or "Other", "source": c.get("source", ""),
                 "verified": bool(c.get("verified")), "use_count": c.get("use_count") or 0,
             })
-        for r, (name,) in zip(rows, self._con().execute(
-                "SELECT name FROM skill_cards WHERE tenant_id = ? ORDER BY seq", (tenant,))):
-            r["name"] = name
         return _FindIndex(rows)
 
     def find(self, tenant: str, query: str, limit: int, category: str | None,
-             verified_only: bool) -> dict:
+             verified_only: bool, kind: str = kinds_mod.DEFAULT) -> dict:
         qt = tokens(query)
         literal = None
         if not qt:
@@ -267,7 +311,7 @@ class Catalog:
                            "matched literally instead of being dropped")
         if not qt:
             return out
-        idx = self._find_index(tenant)
+        idx = self._find_index(tenant, kind)
         top = idx.rank(qt, limit, category, verified_only)
         by_name: dict[str, dict] = {}
         names = [idx.names[i] for _, _, i in top]
@@ -301,6 +345,8 @@ class Catalog:
                 "matched_terms": matched,
                 "install": c.get("install", ""),
             })
+            if c.get("kind"):
+                results[-1]["kind"] = c["kind"]
         out["count"] = len(results)
         out["results"] = results
         return out

@@ -18,6 +18,8 @@ shape the rich build served (keys present only when non-empty, install carrying 
 - A federated name upstream no longer lists is kept and marked in its metadata (upstream_status
   "withdrawn", withdrawn_seen_at); the mark is cleared if the name comes back unchanged.
 - Category facets, list order (seq) and an import_meta record are rebuilt; nothing is deleted.
+- On a database that also holds plugins and connectors (hub/kinds.py) only the skills are read, compared and
+  marked; their order and facets are rebuilt within the kind.
 
 A second run over the same input adds nothing. Record text is stored as data and never executed. The
 live database is refused by name.
@@ -36,6 +38,7 @@ from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from axeskills_hermes_catalog import HermesCatalog  # noqa: E402
+from hub import kinds  # noqa: E402
 from hub.community import CommunityEntry, _bump, _taxonomy  # noqa: E402
 
 TENANT = "community-quarantine"
@@ -175,10 +178,11 @@ def merge(db: Path, hermes: Path, actor: str = DEFAULT_ACTOR, dry_run: bool = Fa
     con = sqlite3.connect(db)
     con.execute("PRAGMA foreign_keys = ON")
     existing = {}
+    only_skills = " AND c.kind = 'skill'" if kinds.present(con) else ""
     for name, version, card, fmt, checksum, meta in con.execute(
             "SELECT c.name, c.version, c.card, s.format, s.checksum, s.metadata FROM skill_cards c JOIN skills s "
-            "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version WHERE c.tenant_id = ?",
-            (TENANT,)):
+            "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version WHERE c.tenant_id = ?"
+            + only_skills, (TENANT,)):
         existing[name] = {"version": version, "card": json.loads(card), "format": fmt, "checksum": checksum,
                           "meta": json.loads(meta)}
     report["before_skills"] = len(existing)
@@ -272,7 +276,8 @@ def merge(db: Path, hermes: Path, actor: str = DEFAULT_ACTOR, dry_run: bool = Fa
         if not dry_run:
             resequence(con)
             rebuild_categories(con)
-            total = con.execute("SELECT COUNT(*) FROM skill_cards WHERE tenant_id = ?", (TENANT,)).fetchone()[0]
+            total = con.execute("SELECT COUNT(*) FROM skill_cards c WHERE tenant_id = ?" + only_skills,
+                                (TENANT,)).fetchone()[0]
             record = {"at": now, "actor": actor, "hermes": str(hermes), "hermes_sha256": report["hermes_sha256"],
                       "hermes_rows": len(raw_rows), "added": sum(added.values()),
                       "updated": sum(updated.values()), "unchanged": sum(unchanged.values()), "skills": total}
@@ -314,23 +319,51 @@ def set_meta(con: sqlite3.Connection, name: str, version: str, meta: dict) -> No
 
 
 def resequence(con: sqlite3.Connection) -> None:
-    """seq is the position in binary name order: list pages are seq ranges and search indexes by seq."""
-    names = sorted((n for (n,) in con.execute("SELECT name FROM skill_cards WHERE tenant_id = ?", (TENANT,))),
-                   key=str.encode)
+    """seq is the position in binary name order: list pages are seq ranges and search indexes by seq.
+
+    Where the database has kinds, each kind is one range in kinds.KINDS order, so skills come first.
+    """
+    if kinds.present(con):
+        rows = con.execute("SELECT kind, name FROM skill_cards WHERE tenant_id = ?", (TENANT,)).fetchall()
+        names = [n for _, n in sorted(rows, key=lambda r: (kinds.rank(r[0]), r[1].encode()))]
+    else:
+        names = sorted((n for (n,) in con.execute("SELECT name FROM skill_cards WHERE tenant_id = ?", (TENANT,))),
+                       key=str.encode)
     con.execute("UPDATE skill_cards SET seq = -1 - seq WHERE tenant_id = ?", (TENANT,))
     con.executemany("UPDATE skill_cards SET seq = ? WHERE tenant_id = ? AND name = ?",
                     ((i, TENANT, n) for i, n in enumerate(names)))
 
 
-def rebuild_categories(con: sqlite3.Connection) -> None:
-    """Counts from the cards; a stored label is kept, a new category gets the stored labels' form."""
-    labels = dict(con.execute("SELECT category, label FROM categories WHERE tenant_id = ?", (TENANT,)))
-    counts = con.execute("SELECT category, COUNT(*) FROM skill_cards WHERE tenant_id = ? GROUP BY category",
+def rebuild_categories(con: sqlite3.Connection, new_labels: dict | None = None,
+                       recount: tuple[str, ...] = kinds.KINDS) -> None:
+    """Counts from the cards; a stored label is kept, a new category gets the stored labels' form.
+
+    Where the database has kinds, facets are per kind and ordered kind by kind (skills first). Only the kinds
+    in recount are counted again; the others keep their stored rows and order, so a plugin merge cannot move
+    a skill facet. new_labels ({(kind, category): label}) names categories not stored yet.
+    """
+    if not kinds.present(con):
+        labels = dict(con.execute("SELECT category, label FROM categories WHERE tenant_id = ?", (TENANT,)))
+        counts = con.execute("SELECT category, COUNT(*) FROM skill_cards WHERE tenant_id = ? GROUP BY category",
+                             (TENANT,)).fetchall()
+        counts.sort(key=lambda r: (r[1], r[0]), reverse=True)
+        con.execute("DELETE FROM categories WHERE tenant_id = ?", (TENANT,))
+        con.executemany("INSERT INTO categories (tenant_id, ord, category, label, count) VALUES (?,?,?,?,?)",
+                        ((TENANT, i, c, labels.get(c) or label_of(c), n) for i, (c, n) in enumerate(counts)))
+        return
+    stored = con.execute("SELECT kind, category, label, count FROM categories WHERE tenant_id = ? ORDER BY ord",
                          (TENANT,)).fetchall()
-    counts.sort(key=lambda r: (r[1], r[0]), reverse=True)
+    labels = {(k, c): lbl for k, c, lbl, _ in stored}
+    marks = ",".join("?" * len(recount))
+    counts = con.execute(f"SELECT kind, category, COUNT(*) FROM skill_cards WHERE tenant_id = ? AND kind IN ({marks})"
+                         " GROUP BY kind, category", (TENANT, *recount)).fetchall()
+    counts.sort(key=lambda r: (r[2], r[1]), reverse=True)
+    rows = [r for r in stored if r[0] not in recount] + [
+        (k, c, labels.get((k, c)) or (new_labels or {}).get((k, c)) or label_of(c), n) for k, c, n in counts]
+    rows.sort(key=lambda r: kinds.rank(r[0]))
     con.execute("DELETE FROM categories WHERE tenant_id = ?", (TENANT,))
-    con.executemany("INSERT INTO categories (tenant_id, ord, category, label, count) VALUES (?,?,?,?,?)",
-                    ((TENANT, i, c, labels.get(c) or label_of(c), n) for i, (c, n) in enumerate(counts)))
+    con.executemany("INSERT INTO categories (tenant_id, ord, category, label, count, kind) VALUES (?,?,?,?,?,?)",
+                    ((TENANT, i, c, lbl, n, k) for i, (k, c, lbl, n) in enumerate(rows)))
 
 
 def check(con: sqlite3.Connection) -> dict:
@@ -370,8 +403,21 @@ def check(con: sqlite3.Connection) -> dict:
             bad_install += 1
     out["served_rows_checksum_mismatch"] = bad_sum
     out["served_rows_install_mismatch"] = bad_install
+    kinds_ok = True
+    if kinds.present(con):
+        out["by_kind"] = {}
+        for kind, n, lo, hi in con.execute("SELECT kind, COUNT(*), MIN(seq), MAX(seq) FROM skill_cards"
+                                           " WHERE tenant_id = ? GROUP BY kind", (TENANT,)):
+            facets = one("SELECT COALESCE(SUM(count), 0) FROM categories WHERE tenant_id = ? AND kind = ?",
+                         TENANT, kind)
+            out["by_kind"][kind] = {"cards": n, "categories_sum": facets, "seq_from": lo,
+                                    "seq_contiguous": hi - lo + 1 == n}
+            kinds_ok = kinds_ok and facets == n and hi - lo + 1 == n
+        firsts = sorted((v["seq_from"], kinds.rank(k)) for k, v in out["by_kind"].items())
+        out["kinds_in_order"] = [r for _, r in firsts] == sorted(r for _, r in firsts)
+        kinds_ok = kinds_ok and out["kinds_in_order"]
     out["ok"] = (out["integrity_check"] == "ok" and out["categories_sum"] == cards == out["distinct_skill_names"]
-                 and out["seq_contiguous"] and not any(out[k] for k in (
+                 and out["seq_contiguous"] and kinds_ok and not any(out[k] for k in (
                      "cards_without_skill_row", "names_without_card", "card_version_not_latest",
                      "cards_without_versions", "served_rows_checksum_mismatch")))
     return out

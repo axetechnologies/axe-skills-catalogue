@@ -35,6 +35,21 @@
         "description": "The agent-facing search route. `count: 0` is a real answer meaning no tool matched.",
         "parameters": [
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "skill",
+                "plugin",
+                "connector"
+              ],
+              "default": "skill"
+            },
+            "description": "skill (default), plugin or connector. Without it only skills are served, as before."
+          },
+          {
             "name": "q",
             "in": "query",
             "required": true,
@@ -262,6 +277,21 @@
         "summary": "Categories present in this tenant's catalogue.",
         "parameters": [
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "skill",
+                "plugin",
+                "connector"
+              ],
+              "default": "skill"
+            },
+            "description": "skill (default), plugin or connector. Without it only skills are served, as before."
+          },
+          {
             "name": "X-AXE-Tenant",
             "in": "header",
             "required": false,
@@ -321,6 +351,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Unknown kind (param \"kind\"), or a bad find query."
           }
         }
       }
@@ -330,6 +363,21 @@
         "summary": "List published skills.",
         "description": "Paged: default 200, maximum 1000 (larger values are capped). limit<=0 returns an empty array. Without envelope the body is a bare array; with ?envelope=1 it is {object, data, limit, offset, total, has_more}.",
         "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "skill",
+                "plugin",
+                "connector"
+              ],
+              "default": "skill"
+            },
+            "description": "skill (default), plugin or connector. Without it only skills are served, as before."
+          },
           {
             "name": "limit",
             "in": "query",
@@ -653,6 +701,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Unknown kind (param \"kind\"), or a bad find query."
           }
         }
       }
@@ -661,6 +712,21 @@
       "get": {
         "summary": "Substring search over skill names and titles.",
         "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "skill",
+                "plugin",
+                "connector"
+              ],
+              "default": "skill"
+            },
+            "description": "skill (default), plugin or connector. Without it only skills are served, as before."
+          },
           {
             "name": "q",
             "in": "query",
@@ -846,6 +912,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Unknown kind (param \"kind\"), or a bad find query."
           }
         },
         "description": "Case-insensitive substring match over the skill name and its stored metadata, ordered by name and paged like the list. A miss is an empty array."
@@ -1052,6 +1121,108 @@
           },
           "404": {
             "description": "No such route or skill.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/kinds": {
+      "get": {
+        "summary": "Kinds in this tenant's catalogue, with counts.",
+        "description": "Always lists skill, plugin and connector, in that order; a kind with no entries counts 0.",
+        "parameters": [
+          {
+            "name": "X-AXE-Tenant",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tenant to read. Optional where the origin sets a default tenant; otherwise a missing tenant is a 403."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "usage": {
+                      "type": "string"
+                    },
+                    "kinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "skill",
+                              "plugin",
+                              "connector"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "list": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tenant could be resolved for this request.",
             "content": {
               "application/json": {
                 "schema": {
