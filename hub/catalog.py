@@ -187,11 +187,27 @@ class Catalog:
         return [{"kind": k, "label": kinds_mod.LABELS[k], "count": self.total(tenant, k),
                  "list": f"/v1/skills?kind={k}"} for k in kinds_mod.KINDS]
 
-    def list_page(self, tenant: str, limit: int, offset: int, kind: str = kinds_mod.DEFAULT) -> list[str]:
+    def category_total(self, tenant: str, kind: str, category: str) -> int:
+        where = self._kind(kind)
+        return 0 if where is None else self._con().execute(
+            "SELECT COUNT(*) FROM skill_cards c WHERE c.tenant_id = ? AND c.category = ?" + where[0],
+            [tenant, category] + where[1]).fetchone()[0]
+
+    def list_page(self, tenant: str, limit: int, offset: int, kind: str = kinds_mod.DEFAULT,
+                  category: str | None = None) -> list[str]:
         first = self._first_seq(tenant, kind)
         if limit <= 0 or first is None:
             return []
         where = self._kind(kind)
+        if category:
+            # Optional filter: a page of one category is a range on skill_cards_category (tenant, category, seq).
+            rows = self._con().execute(
+                f"SELECT {_COLS}, c.card FROM skill_cards c JOIN skills s "
+                "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
+                "WHERE c.tenant_id = ? AND c.category = ? AND s.yanked_at IS NULL" + where[0] +
+                " ORDER BY c.seq LIMIT ? OFFSET ?",
+                [tenant, category] + where[1] + [limit, offset]).fetchall()
+            return [_row_json(r[:9], r[9]) for r in rows]
         rows = self._con().execute(
             f"SELECT {_COLS}, c.card FROM skill_cards c JOIN skills s "
             "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
