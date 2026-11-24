@@ -90,6 +90,12 @@ category's `find` link carries its `&kind=`. Names are unique across kinds, so `
 `/versions` serve any kind. A plugin or connector row has `card.kind` and `metadata.kind`; its `find` result
 has `kind`. Skill rows carry neither, as before.
 
+### Host pages
+
+`skills.axe.onl`, `barracks.0perator.co` and `operator.axetechnologies.ca` each get their own page at `/`, chosen by the `Host` header (`X-Forwarded-Host` only from a loopback peer). Any other host, `127.0.0.1` included, gets the browsable index as before. The API is the same on every host. Routing, the Content-Security-Policy, where the numbers come from and the decisions behind them are in [`docs/host-pages.md`](docs/host-pages.md).
+
+`GET /v1/skills` also takes an optional `category=<slug>`, used by the pages.
+
 ### Find (agent-optimised)
 
 ```
