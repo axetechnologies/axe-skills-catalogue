@@ -32,6 +32,12 @@ hub database: 114,134 distinct skills on that copy (48,396 added, 5,283 new vers
 `upstream_status: "withdrawn"`, none deleted). The served API shape is unchanged. This mirror's published
 snapshot still holds the 65,738 records until the copy is swapped in and a new snapshot is published.
 
+Note (2026-11-24): the hub now serves three kinds: skills, plugins and connectors (`GET /v1/kinds`,
+`?kind=` on list, search, categories and find; README "Kinds"). A request without `kind` gets skills only,
+so the export above and every existing client are unchanged. `scripts/merge_hermes_kinds.py` merges Hermes'
+2,579 plugins and 54 connectors into a copy of the database, all quarantined; nothing about them is in this
+mirror's snapshot yet.
+
 ## Where durability comes from
 
 1. **`axeskills-catalogue-sync.yml`**, twice daily, fetches the live

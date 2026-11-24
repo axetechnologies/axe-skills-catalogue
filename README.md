@@ -67,6 +67,29 @@ Full-text search across `name` and `description`. Same pagination parameters as 
 curl 'https://skills.axe.onl/v1/skills/search?q=log+tail'
 ```
 
+### Kinds: skills, plugins and connectors
+
+```
+GET /v1/kinds
+```
+
+The catalogue holds three kinds of entry. `/v1/kinds` lists all three, in this order, with counts:
+
+```json
+{"count": 3, "kinds": [{"kind": "skill", "label": "Skills", "count": 114134, "list": "/v1/skills?kind=skill"},
+                       {"kind": "plugin", "label": "Plugins", "count": 2579, "list": "/v1/skills?kind=plugin"},
+                       {"kind": "connector", "label": "Connectors", "count": 54, "list": "/v1/skills?kind=connector"}],
+ "usage": "pick a kind, then /v1/skills?kind=<kind> or /v1/categories?kind=<kind>"}
+```
+
+`?kind=skill|plugin|connector` selects one kind on `/v1/skills`, `/v1/skills/search`, `/v1/categories` and
+`/v1/tools/find` (and `/v1/skills/find`). **Without it only skills are served**, byte for byte as before, so a
+client written before plugins and connectors existed sees no change. Any other value is a 400 with
+`"param": "kind"`; there is no `all`. Categories are per kind (`/v1/categories?kind=plugin`); a non-skill
+category's `find` link carries its `&kind=`. Names are unique across kinds, so `/v1/skills/<name>` and
+`/versions` serve any kind. A plugin or connector row has `card.kind` and `metadata.kind`; its `find` result
+has `kind`. Skill rows carry neither, as before.
+
 ### Find (agent-optimised)
 
 ```
@@ -205,6 +228,48 @@ the plain row for one record and names the others by their `installIdentifier`. 
 are kept and marked `upstream_status: "withdrawn"` in their metadata. Order (`seq`), the category facets and an
 `import_meta` record are rebuilt, the report ends with integrity and consistency checks, and a second run over
 the same export adds nothing. The swap to the copy is a separate, reviewed step.
+
+### Merge Hermes plugins and connectors
+
+```bash
+sqlite3 ~/.axe/hub/barracks.db ".backup ~/.axe/hub/barracks.kinds.db"     # always a copy
+python3 scripts/merge_hermes_kinds.py --db ~/.axe/hub/barracks.kinds.db \
+    --input plugins-normalized.json --input connectors-normalized.json --report merge-kinds.json
+```
+
+The companion of `merge_hermes.py` for the other two kinds, with the same refusals (plus the file `AXE_HUB_DB`
+names and `~/.axe/hub/barracks.db` by identity, so a hard link or symlink is refused too). Input is normalised
+JSON (`kind, name, display_name, source, author, category, description, version, licence, homepage, install,
+trust_tier, disclosure, permissions, env_vars, platforms, raw`, plus `publisher, licence_source, repo,
+repo_pin, credentials_needed, risk_flags, stars, updated_at` where present).
+
+- The kind columns are added first if missing (below); no skill row is rewritten.
+- A record's name is `<kind>__axehub:<source>__<name>`; records sharing one collapse to the richest.
+- Everything is quarantined and unverified, whatever upstream's trust tier says. The tier, licence, author,
+  publisher, disclosure, risk flags, credentials, permissions, env vars, platforms, repo pin and upstream
+  install command go on the card (and the review fields into `metadata`); the card's `install` is the hub's own.
+- The body is the whole record as sorted JSON; new names land at `1.0.0`, a changed body gets the next
+  version, names upstream drops are marked `upstream_status: "withdrawn"` (only for kinds the run brought).
+- The report hashes what a skills-only client is served (rows in order, facets) before and after;
+  `skills_untouched` must be true for `checks.ok`. A second run adds nothing.
+
+`merge_hermes.py` on such a database reads, compares and marks skills only, and keeps each kind in its range.
+
+### Kinds migration
+
+`hub/kinds.py` adds `kind TEXT NOT NULL DEFAULT 'skill'` to `skill_cards` and `categories` (constant default,
+so no existing row is rewritten) and an index on `(tenant_id, kind, seq)`. Each kind is one contiguous `seq`
+range, skills first, so skills keep their `seq` and list pages stay range scans.
+
+```bash
+python3 scripts/migrate_kinds.py --db COPY up     # add the columns
+python3 scripts/migrate_kinds.py --db COPY down   # delete plugins and connectors, drop the columns
+```
+
+`down` leaves the skills' rows, order and facets exactly as `up` found them (it checks). The server reads
+either shape: on a database without the column, `kind=skill` is the whole catalogue and the other kinds are
+empty. Code from before this change serving a database with plugins would show them as skills, so roll the
+database back with the code.
 
 ### Tenant
 
