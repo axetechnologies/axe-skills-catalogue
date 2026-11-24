@@ -1,5 +1,5 @@
 /* Shared data layer for the three host pages. Same-origin, read-only, and every string it returns is untrusted:
-   callers write it with textContent (Hub.el) and never with innerHTML. */
+   callers write it with textContent (Hub.el) and never as markup. */
 (function (w) {
   "use strict";
   var Hub = w.Hub = {};

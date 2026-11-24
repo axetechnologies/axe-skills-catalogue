@@ -201,23 +201,23 @@ class PageData:
                 cats[k].append({"category": c, "label": label, "count": n})
             sample: dict[str, list] = {k: [] for k in kinds_mod.KINDS}
 
-            def pull(where: str, args: list, kind: str) -> None:
+            def pull(where: str, args: list, kind: str, limit: int = -1) -> None:
                 for name, version, card, meta, checksum in con.execute(
                         "SELECT c.name, c.version, c.card, s.metadata, s.checksum FROM skill_cards c JOIN skills s "
                         "ON s.tenant_id = c.tenant_id AND s.name = c.name AND s.version = c.version "
-                        f"WHERE c.tenant_id = ? AND s.yanked_at IS NULL AND {where} ORDER BY c.seq", [tenant] + args):
+                        f"WHERE c.tenant_id = ? AND s.yanked_at IS NULL AND {where} ORDER BY c.seq LIMIT ?", [tenant] + args + [limit]):
                     sample[kind].append(_trim(json.loads(card), json.loads(meta), name, version, checksum))
 
             if has:
                 pull("c.kind = 'connector'", [], "connector")
                 pull("c.kind = 'plugin' AND json_extract(c.card, '$.trust_tier') IN ('Official', 'Certified')", [], "plugin")
                 pull("c.kind = 'plugin' AND json_extract(c.card, '$.trust_tier') = 'Community' "
-                     f"AND c.seq % 400 = 0 LIMIT {_SAMPLE_PLUGINS_COMMUNITY}", [], "plugin")
-                pull("c.kind = 'skill' AND c.verified = 0 AND c.seq % ? = 0 LIMIT ?",
-                     [max(1, stats["totals"]["skill"] // _SAMPLE_SKILLS), _SAMPLE_SKILLS], "skill")
+                     "AND c.seq % 400 = 0", [], "plugin", _SAMPLE_PLUGINS_COMMUNITY)
+                pull("c.kind = 'skill' AND c.verified = 0 AND c.seq % ? = 0",
+                     [max(1, stats["totals"]["skill"] // _SAMPLE_SKILLS)], "skill", _SAMPLE_SKILLS)
             else:
-                pull("c.verified = 0 AND c.seq % ? = 0 LIMIT ?",
-                     [max(1, stats["totals"]["skill"] // _SAMPLE_SKILLS), _SAMPLE_SKILLS], "skill")
+                pull("c.verified = 0 AND c.seq % ? = 0",
+                     [max(1, stats["totals"]["skill"] // _SAMPLE_SKILLS)], "skill", _SAMPLE_SKILLS)
             base = "https://" + host
             blob = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                     "kinds": [{"kind": k, "label": kinds_mod.LABELS[k], "count": stats["totals"][k]}
