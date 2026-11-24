@@ -16,11 +16,13 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from hub import catalog as catalog_mod
 from hub import discover
+from hub import kinds
 from hub.evals import EvalStore, NoOpEvalStore as _NoOpEvalStore
 from hub.store import Conflict, HubError, NotFound, Registry
 
 OPENAPI_PATH = Path(__file__).parent / "openapi.json"
 CATEGORIES_USAGE = "pick a category, then /v1/tools/find?category=<slug>&q=<task>"
+KINDS_USAGE = "pick a kind, then /v1/skills?kind=<kind> or /v1/categories?kind=<kind>"
 # Sent on every response, as the rich build does. HSTS is left to the TLS edge: sending it over plain
 # HTTP from here would be ignored by browsers and wrong for a loopback client.
 SECURITY_HEADERS = (
@@ -252,6 +254,18 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_json(400, {"error": {"type": "invalid_request_error", "code": "bad_request",
                                         "message": message, "param": "limit"}, "param": "limit"})
 
+    def _kind(self) -> str | None:
+        """The ?kind= of this request, skill when absent; None after sending the 400 for an unknown one.
+
+        Absent means skill so that a client written before plugins and connectors existed keeps seeing
+        exactly the catalogue it saw then.
+        """
+        kind = (self._qs().get("kind") or [kinds.DEFAULT])[0] or kinds.DEFAULT
+        if kind not in kinds.KINDS:
+            self._error(400, "bad_request", f"kind must be one of {', '.join(kinds.KINDS)}", param="kind")
+            return None
+        return kind
+
     def _find_params(self) -> tuple[str, int, bool, str | None, bool] | None:
         """(query, limit, capped, category, verified_only), or None after sending the 400."""
         qs = self._qs()
@@ -281,7 +295,7 @@ class _Handler(BaseHTTPRequestHandler):
             doc["servers"] = [{"url": self._base()}]
             self._send_json(200, doc)
             return True
-        if path not in ("/v1/skills", "/v1/skills/search", "/v1/categories", "/v1/tools/find",
+        if path not in ("/v1/skills", "/v1/skills/search", "/v1/categories", "/v1/kinds", "/v1/tools/find",
                         "/v1/skills/find") and not path.startswith("/v1/skills/"):
             return False
         tenant = self._resolve_tenant()
@@ -292,8 +306,20 @@ class _Handler(BaseHTTPRequestHandler):
         raw_query = urlparse(self.path).query
         base = self._base()
 
+        if path == "/v1/kinds":
+            rows = cat.kinds(tenant)
+            self._send_json(200, {"count": len(rows), "kinds": rows, "usage": KINDS_USAGE})
+            return True
+
+        # Detail and versions are by name, which is unique across kinds; every other route serves one kind.
+        kind = kinds.DEFAULT
+        if not path.startswith("/v1/skills/") or path == "/v1/skills/search" or path == "/v1/skills/find":
+            kind = self._kind()
+            if kind is None:
+                return True
+
         if path == "/v1/categories":
-            cats = cat.categories(tenant)
+            cats = cat.categories(tenant, kind)
             self._send_json(200, {"count": len(cats), "categories": cats, "usage": CATEGORIES_USAGE})
             return True
 
@@ -302,9 +328,9 @@ class _Handler(BaseHTTPRequestHandler):
             envelope = (qs.get("envelope") or [""])[0] in ("1", "true", "yes")
 
             def render() -> str:
-                rows = cat.list_page(tenant, limit, offset)
+                rows = cat.list_page(tenant, limit, offset, kind)
                 if envelope:
-                    total = cat.total(tenant)
+                    total = cat.total(tenant, kind)
                     body = (f'{{"object": "list", "data": [{", ".join(rows)}], "limit": {limit}, '
                             f'"offset": {offset}, "total": {total}, '
                             f'"has_more": {"true" if offset + len(rows) < total else "false"}}}')
@@ -312,7 +338,7 @@ class _Handler(BaseHTTPRequestHandler):
                     body = "[" + ", ".join(rows) + "]"
                 return body.replace(catalog_mod.HOST_TOKEN, base)
 
-            self._send_json(200, self._cached((tenant, base, path, limit, offset, envelope), render))
+            self._send_json(200, self._cached((tenant, base, path, limit, offset, envelope, kind), render))
             return True
 
         if path == "/v1/skills/search":
@@ -321,8 +347,8 @@ class _Handler(BaseHTTPRequestHandler):
                 self._error(400, "bad_request", "q (or task) is required")
                 return True
             limit, offset = self._limit_offset()
-            self._send_json(200, self._cached((tenant, base, path, q, limit, offset), lambda: (
-                "[" + ", ".join(cat.search(tenant, q, limit, offset)) + "]"
+            self._send_json(200, self._cached((tenant, base, path, q, limit, offset, kind), lambda: (
+                "[" + ", ".join(cat.search(tenant, q, limit, offset, kind)) + "]"
             ).replace(catalog_mod.HOST_TOKEN, base)))
             return True
 
@@ -333,7 +359,7 @@ class _Handler(BaseHTTPRequestHandler):
             q, limit, capped, category, verified = params
 
             def render() -> str:
-                out = cat.find(tenant, q, limit, category, verified)
+                out = cat.find(tenant, q, limit, category, verified, kind)
                 if capped:
                     out["limit_capped"] = True
                     out["note_limit"] = "limit was reduced to the maximum of 50"
@@ -387,12 +413,27 @@ class _Handler(BaseHTTPRequestHandler):
         if self.catalog is not None and self._get_catalog_routes(path):
             return
 
+        # The plain registry has no kind column: everything in it is a skill, so the other kinds are empty.
+        if path == "/v1/kinds":
+            tenant = self._resolve_tenant()
+            if not tenant:
+                self._no_tenant()
+                return
+            n = len(self.registry.list(tenant))
+            rows = [{"kind": k, "label": kinds.LABELS[k], "count": n if k == kinds.DEFAULT else 0,
+                     "list": f"/v1/skills?kind={k}"} for k in kinds.KINDS]
+            self._send_json(200, {"count": len(rows), "kinds": rows, "usage": KINDS_USAGE})
+            return
+
         if path == "/v1/skills":
             tenant = self._resolve_tenant()
             if not tenant:
                 self._no_tenant()
                 return
-            self._send_json(200, self._page(self.registry.list(tenant)))
+            kind = self._kind()
+            if kind is None:
+                return
+            self._send_json(200, self._page(self.registry.list(tenant)) if kind == kinds.DEFAULT else [])
             return
 
         if path == "/v1/skills/search":
@@ -400,12 +441,15 @@ class _Handler(BaseHTTPRequestHandler):
             if not tenant:
                 self._no_tenant()
                 return
+            kind = self._kind()
+            if kind is None:
+                return
             q = (self._qs().get("q") or [""])[0]
             # Paged for the same reason the list is: a short query here matches
             # a large fraction of an 83k catalogue (a one-word prefix search
             # returned every row), so an unpaged search is a bigger response
             # than the unpaged list it was meant to be an alternative to.
-            self._send_json(200, self._page(self.registry.search(tenant, q)))
+            self._send_json(200, self._page(self.registry.search(tenant, q)) if kind == kinds.DEFAULT else [])
             return
 
         if path in ("/v1/tools/find", "/v1/skills/find"):
@@ -413,12 +457,15 @@ class _Handler(BaseHTTPRequestHandler):
             if not tenant:
                 self._no_tenant()
                 return
+            kind = self._kind()
+            if kind is None:
+                return
             params = self._find_params()
             if params is None:
                 return
             q, limit, capped, cat, verified = params
             hits = discover.rank(self.db_path, tenant, q, limit=limit,
-                                 category=cat, verified_only=verified)
+                                 category=cat, verified_only=verified) if kind == kinds.DEFAULT else []
             # The query is echoed because an agent that fired several searches
             # needs to tell the answers apart, and `count` because "no tool for
             # this" is a real, useful answer that an empty list states weakly.

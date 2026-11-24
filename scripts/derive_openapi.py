@@ -50,6 +50,24 @@ get = paths["/v1/skills/{name}"]["get"]
 get["parameters"] = get["parameters"] + [
     param("version", "Exact version. Only the current version of a skill has a stored body.", {"type": "string"})]
 
+kind_param = param("kind", "skill (default), plugin or connector. Without it only skills are served, as before.",
+                   {"type": "string", "enum": ["skill", "plugin", "connector"], "default": "skill"})
+for route in ("/v1/skills", "/v1/skills/search", "/v1/categories", "/v1/tools/find"):
+    op = paths[route]["get"]
+    op["parameters"] = [kind_param] + op.get("parameters", [])
+    op["responses"].setdefault("400", {"description": "Unknown kind (param \"kind\"), or a bad find query."})
+paths["/v1/kinds"] = {"get": {
+    "summary": "Kinds in this tenant's catalogue, with counts.",
+    "description": "Always lists skill, plugin and connector, in that order; a kind with no entries counts 0.",
+    "parameters": [p for p in paths["/v1/categories"]["get"]["parameters"] if p["in"] == "header"],
+    "responses": {"200": {"description": "OK", "content": {"application/json": {"schema": {
+        "type": "object", "properties": {
+            "count": {"type": "integer"}, "usage": {"type": "string"},
+            "kinds": {"type": "array", "items": {"type": "object", "properties": {
+                "kind": {"type": "string", "enum": ["skill", "plugin", "connector"]}, "label": {"type": "string"},
+                "count": {"type": "integer"}, "list": {"type": "string"}}}}}}}}},
+        "403": paths["/v1/categories"]["get"]["responses"]["403"]}}}
+
 for p in paths.values():
     for op in p.values():
         r405 = op.get("responses", {}).get("405")
