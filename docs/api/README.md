@@ -27,6 +27,11 @@ Without it, the job downloads the published asset and runs the same checks (a li
 equal to the manifest), and publishes nothing. It fails only when the published snapshot is missing or broken.
 To resume live syncing, set `AXESKILLS_CATALOGUE_URL` to a source that serves both files.
 
+Note (2026-11-24): `scripts/merge_hermes.py` merges a newer Hermes export (104,930 records) into a copy of the
+hub database: 114,134 distinct skills on that copy (48,396 added, 5,283 new versions, 9,123 marked
+`upstream_status: "withdrawn"`, none deleted). The served API shape is unchanged. This mirror's published
+snapshot still holds the 65,738 records until the copy is swapped in and a new snapshot is published.
+
 ## Where durability comes from
 
 1. **`axeskills-catalogue-sync.yml`**, twice daily, fetches the live

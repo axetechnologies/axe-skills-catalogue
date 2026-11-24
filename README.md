@@ -188,6 +188,24 @@ report records the input checksums, 65,738 rows (names unique, in the rich build
 and compared, and that all 65,738 bodies hash to their reported checksum (381 captured; 65,357 catalog bodies
 rebuilt from metadata and card and proven by that hash).
 
+### Merge a newer Hermes catalogue
+
+```bash
+sqlite3 ~/.axe/hub/barracks.db ".backup ~/.axe/hub/barracks.next.db"     # always a copy
+python3 scripts/merge_hermes.py --db ~/.axe/hub/barracks.next.db --hermes hermes-skills.json --report merge.json
+```
+
+It writes only the `--db` it is given and refuses the live names (`barracks.db`, `hub.db`, `hub-v2.db`,
+`skills-catalogue.db`). Rows are built as the existing community rows were (`HermesCatalog` reads the export,
+`hub.community._taxonomy` classifies, the body is the `federate()` descriptor and its sha256 the checksum, the
+card has the rich build's shape), so an unchanged upstream record reproduces its stored checksum and card
+exactly. New names land at `1.0.0` in `community-quarantine`; a changed body gets the next version and the card
+moves to it. `source/name` is not unique upstream (browse.sh has nine `search-listings`), so a shared name keeps
+the plain row for one record and names the others by their `installIdentifier`. Names upstream no longer lists
+are kept and marked `upstream_status: "withdrawn"` in their metadata. Order (`seq`), the category facets and an
+`import_meta` record are rebuilt, the report ends with integrity and consistency checks, and a second run over
+the same export adds nothing. The swap to the copy is a separate, reviewed step.
+
 ### Tenant
 
 The rich build reports every row as tenant `community-quarantine` (the old DB says `public`) and ignores
