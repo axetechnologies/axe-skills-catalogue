@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import sys
 from pathlib import Path
 
 from hub.ingest import _bump_patch, parse_skillmd
-from hub.store import Conflict, NotFound, Registry
+from hub.store import Conflict, HubError, NotFound, Registry
 
 
 def _db_path(args):
@@ -200,6 +201,57 @@ def _cmd_installed(args):
     return list_installed(dest=dest, db_path=_db_path(args))
 
 
+def _review_run(fn):
+    from hub import review
+    try:
+        return fn(review)
+    except Conflict as e:
+        print(f"conflict: {e}", file=sys.stderr)
+        return 2
+    except HubError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+
+def _cmd_review_list(args):
+    def run(review):
+        rows = review.list_quarantined(Path(args.db))
+        if not rows:
+            print("(no quarantined user skills)")
+        for r in rows:
+            print(f"{r['tenant']}  {r['name']}  {r['version']}  {r['size']}  {r['created_at']}")
+        return 0
+    return _review_run(run)
+
+
+def _cmd_review_show(args):
+    def run(review):
+        row = review.get_skill(Path(args.db), args.tenant, args.skill_name, args.version)
+        print(json.dumps({k: row[k] for k in ("tenant_id", "name", "version", "format", "checksum",
+                                              "created_by", "created_at", "yanked_at", "metadata")}, indent=2))
+        print("--- content ---")
+        print(row["content"])
+        return 0
+    return _review_run(run)
+
+
+def _cmd_review_promote(args):
+    def run(review):
+        ref = review.promote(Path(args.db), Path(args.to), args.tenant, args.skill_name, args.version,
+                             to_tenant=args.reviewed_tenant, reviewer=args.reviewer)
+        print(f"promoted: {ref}")
+        return 0
+    return _review_run(run)
+
+
+def _cmd_review_reject(args):
+    def run(review):
+        review.reject(Path(args.db), args.tenant, args.skill_name, args.version, reviewer=args.reviewer)
+        print(f"rejected: {args.tenant}/{args.skill_name}@{args.version}")
+        return 0
+    return _review_run(run)
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="hub", description="AXE Skills Hub CLI")
     p.add_argument("--db", metavar="PATH", help="Hub database path")
@@ -242,6 +294,34 @@ def build_parser():
     ins2_p = sub.add_parser("installed", help="List installed skills and flag drift")
     ins2_p.add_argument("--dest")
 
+    rev_p = sub.add_parser("review", help="Review quarantined user skills (offline, owner-run)")
+    rev_sub = rev_p.add_subparsers(dest="review_command", required=True)
+
+    rl_p = rev_sub.add_parser("list", help="List quarantined user skills in a write db")
+    rl_p.add_argument("--db", required=True, metavar="PATH", help="Write database")
+
+    rs_p = rev_sub.add_parser("show", help="Show metadata and content of a quarantined skill")
+    rs_p.add_argument("--db", required=True, metavar="PATH", help="Write database")
+    rs_p.add_argument("tenant")
+    rs_p.add_argument("skill_name")
+    rs_p.add_argument("version")
+
+    rp_p = rev_sub.add_parser("promote", help="Verify a quarantined skill into the catalogue db")
+    rp_p.add_argument("--db", required=True, metavar="PATH", help="Write database (source)")
+    rp_p.add_argument("tenant")
+    rp_p.add_argument("skill_name")
+    rp_p.add_argument("version")
+    rp_p.add_argument("--to", required=True, metavar="PATH", help="Catalogue database (target)")
+    rp_p.add_argument("--tenant", dest="reviewed_tenant", required=True, help="Reviewed tenant in the target")
+    rp_p.add_argument("--reviewer", required=True)
+
+    rr_p = rev_sub.add_parser("reject", help="Yank a quarantined skill in the write db")
+    rr_p.add_argument("--db", required=True, metavar="PATH", help="Write database")
+    rr_p.add_argument("tenant")
+    rr_p.add_argument("skill_name")
+    rr_p.add_argument("version")
+    rr_p.add_argument("--reviewer", required=True)
+
     return p
 
 
@@ -257,6 +337,13 @@ def main(argv=None):
         "install": _cmd_install,
         "installed": _cmd_installed,
     }
+    if args.command == "review":
+        return {
+            "list": _cmd_review_list,
+            "show": _cmd_review_show,
+            "promote": _cmd_review_promote,
+            "reject": _cmd_review_reject,
+        }[args.review_command](args)
     return dispatch[args.command](args)
 
 

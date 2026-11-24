@@ -1,0 +1,7 @@
+	# Marketplace (skills hub), behind the gateway: bearer verify, subscription check and write vetting happen there.
+	@marketplace path /v1/skills /v1/skills/* /v1/tools/find
+	handle @marketplace {
+		request_header -X-AXE-Tenant
+		request_header -X-AXE-Key
+		reverse_proxy 127.0.0.1:8743
+	}
