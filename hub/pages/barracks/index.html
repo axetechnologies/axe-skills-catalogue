@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme-key="barracks-theme">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barracks · Operator</title>
+<meta name="description" content="Barracks, the Operator skills marketplace. Every skill, plugin and connector arrives quarantined until the owner promotes it.">
+<link rel="canonical" href="https://barracks.0perator.co/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Barracks · Operator">
+<meta property="og:description" content="The Operator skills marketplace. Every skill, plugin and connector arrives quarantined until the owner promotes it.">
+<meta property="og:url" content="https://barracks.0perator.co/">
+<meta property="og:site_name" content="Operator">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="https://0perator.co/enterprise/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/common.js"></script>
+</head>
+<body>
+<div class="field">
+  <header class="wrap bar">
+    <nav id="nav" aria-label="Operator">
+      <a href="https://0perator.co/">Operator</a>
+      <a href="#catalogue">Skills</a>
+      <a href="#developers">Developers</a>
+      <button class="tbtn theme" type="button">Theme</button>
+    </nav>
+    <a class="brand" href="#" aria-label="Barracks, Operator skills, home">
+      <span class="mark"><svg viewBox="0 0 2048 2048" fill="currentColor" aria-hidden="true"><polygon points="1024.00,81.92 1140.45,665.61 1577.74,261.84 1328.86,802.50 1919.97,732.88 1400.83,1024.00 1919.97,1315.12 1328.86,1245.50 1577.74,1786.16 1140.45,1382.39 1024.00,1966.08 907.55,1382.39 470.26,1786.16 719.14,1245.50 128.03,1315.12 647.17,1024.00 128.03,732.88 719.14,802.50 470.26,261.84 907.55,665.61"/></svg></span>
+      <span class="wm">Operator <i>Barracks</i></span>
+    </a>
+    <div class="right">
+      <button class="tbtn theme" type="button">Theme</button>
+      <a class="req" href="https://0perator.co/">Get Operator</a>
+      <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu"><i></i><i></i><i></i></button>
+    </div>
+  </header>
+  <div class="wrap hero" id="hero">
+    <div>
+      <p class="lbl">Operator skills marketplace</p>
+      <h1>Barracks</h1>
+      <p class="lede">Every skill arrives <em>quarantined</em> until the owner promotes it.</p>
+      <p class="meta" id="meta">Reading the index&hellip;</p>
+    </div>
+    <div class="muster">
+      <svg class="loop" viewBox="0 0 58 32" aria-hidden="true"><path d="M36 4C24-1 4 2 3 15c-1 10 13 15 27 13 14-2 26-7 25-15C54 6 40 1 24 3"/></svg>
+      <div class="grid-field" id="field" aria-hidden="true"></div>
+      <dl class="stats" id="stats"></dl>
+      <p class="unit" id="unit"></p>
+    </div>
+  </div>
+</div>
+
+<main class="wrap doc-wrap" id="main">
+  <div class="doc">
+  <div id="list-view">
+    <section aria-labelledby="h-feat" id="feat-sec">
+      <p class="lbl">Featured</p>
+      <h2 id="h-feat">Promoted, and ready to carry.</h2>
+      <div id="feat" aria-roledescription="carousel" aria-live="polite"></div>
+      <div class="ctrl">
+        <button class="btn" id="fPrev" type="button" aria-label="Previous featured skill">Prev</button>
+        <div class="dots" id="dots"></div>
+        <button class="btn" id="fNext" type="button" aria-label="Next featured skill">Next</button>
+      </div>
+    </section>
+
+    <section id="catalogue" aria-label="Catalogue">
+      <div class="search" role="search">
+        <label class="vh" for="q">Search skills, plugins and connectors</label>
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search the catalogue">
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+      <div class="row1">
+        <div class="kinds" role="tablist" aria-label="Kind" id="kinds"></div>
+        <div class="sortbox">
+          <span id="count" aria-live="polite"></span>
+          <label for="sort">Sort <select id="sort"><option value="name">Name</option><option value="rank">Rank</option><option value="cat">Category</option></select></label>
+        </div>
+      </div>
+      <div class="chips" id="chips" aria-label="Filters"></div>
+      <p class="triage" id="triage"></p>
+      <ul class="grid" id="grid"></ul>
+      <div class="showmore"><button class="btn" id="more" type="button"></button></div>
+      <p class="status" id="status"></p>
+    </section>
+
+    <section aria-label="Shelves" id="shelves"></section>
+
+    <section class="dev" id="developers" aria-label="Developers">
+      <div><p class="lbl">Developers</p><h3>The hub API</h3><p>Everything on this page comes from the same read-only endpoints your Operators use. Search runs on the server, across the whole catalogue.</p>
+        <pre id="api"></pre></div>
+      <div><p class="lbl">Publish</p><h3>Bring a skill.</h3><p>Signed-in Operators can publish. A new skill lands in quarantine like everything else, and waits for the owner's review.</p>
+        <a class="btn solid" href="https://0perator.co/">Sign in to publish</a></div>
+    </section>
+  </div>
+
+  <div id="detail-view" hidden></div>
+  </div>
+</main>
+
+<footer class="field">
+  <div class="wrap"><span>Operator · Barracks</span><span id="snap"></span></div>
+</footer>
+<!--HUB-FALLBACK-->
+<script src="/assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-theme-key="axe-theme">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AXe Skills Hub</title>
+<meta name="description" content="The AXe skills hub: a self-hosted index where every skill, plugin and connector is quarantined until it is reviewed.">
+<link rel="canonical" href="https://skills.axe.onl/">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/common.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <a class="brand" href="#top" aria-label="AXe Technologies skills hub, top of page">
+      <svg class="cube" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 173.21 200" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1.1 49.36L86.6 98.73L172.11 49.36L86.6 0ZM84.59 32.91 69.86 50.25 93.53 50.23ZM43.81 67.67 53.28 67.66 89.47 24.98 92.05 24.98 114.19 67.6 123.77 67.59 123.63 68.42 90.48 68.46 90.62 67.62 102.57 67.61 94.04 51.06 69.07 51.09 55 67.66 66.95 67.65 66.81 68.48 43.67 68.51ZM0 150L85.5 199.36L85.5 100.64L0 51.27ZM11.36 133.86 17.64 137.82 34.77 126.06 18.18 88.97 11.54 84.79 11.61 83.11 39.45 100.67 39.38 102.35 30.02 96.44 41.49 122.08 55.02 112.21 46.25 106.68 46.32 105.01 63.73 115.99 63.66 117.67 57.38 113.7 42.49 124.43 60.64 164.95 67.15 169.06 67.08 170.73 39.37 153.25 39.44 151.57 48.79 157.48 35.76 128.4 20.01 139.32 28.78 144.85 28.71 146.52 11.29 135.54ZM87.7 199.36L173.21 150L173.21 51.27L87.7 100.64ZM144.57 116.34Q144.8 114.69 144.79 113.36Q144.78 112.04 144.77 110.61Q144.74 106.86 143.92 104.79Q143.1 102.73 141.67 101.93Q140.24 101.13 138.21 101.44Q136.17 101.75 133.84 102.8Q129.65 104.69 126.96 107.39Q124.27 110.1 122.69 113.36Q121.11 116.61 120.34 120.28Q119.56 123.95 119.35 127.69ZM119.24 129.29Q119.25 130.4 119.19 131.58Q119.14 132.77 119.16 134.53Q119.19 138.17 119.71 141.92Q120.23 145.66 121.92 148.11Q123.61 150.56 126.89 151.19Q130.16 151.81 135.58 149.38Q140.99 146.94 144.49 143.93Q147.98 140.92 149.99 137.96Q152.01 135.01 152.97 132.47Q153.94 129.93 154.42 128.39L156.27 127.89Q155.91 129.27 154.88 132Q153.86 134.73 151.6 138.01Q149.34 141.3 145.48 144.75Q141.62 148.21 135.47 150.98Q129.32 153.75 124.07 154.34Q118.83 154.93 114.99 153.34Q111.15 151.75 109.02 148.11Q106.89 144.48 106.84 138.86Q106.8 134.01 108.92 128.46Q111.03 122.92 114.76 117.7Q118.48 112.48 123.51 108.06Q128.53 103.64 134.32 101.04Q137.76 99.49 141.71 98.82Q145.65 98.15 149.06 99.1Q152.46 100.06 154.77 103.12Q157.08 106.17 157.13 112.23Z"/></svg>
+      <span class="lockup"><b>AXe TECHNOLOGIES</b>SKILLS HUB</span>
+    </a>
+    <button class="toggle caps" id="theme" type="button" aria-label="Switch colour theme">Theme</button>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="h1">
+      <div class="h-head">
+        <p class="caps dim">Self-hosted index &middot; quarantine by default &middot; <span class="num" id="k-total">&hellip;</span> entries</p>
+        <h1 id="h1">Nothing crosses the line until it is reviewed.</h1>
+      </div>
+      <div class="h-num">
+        <span class="big num" id="k-verified" aria-describedby="k-cap">&hellip;</span>
+        <p class="cap caps" id="k-cap">Verified and released from quarantine. Only these install without an owner&rsquo;s sign-off.</p>
+      </div>
+      <div class="h-cols cols" aria-labelledby="h-cols">
+        <h2 id="h-cols" class="caps">Mission collections</h2>
+        <p class="dim">Each one runs a live search of the index. A match is a starting point for review, not a clearance.</p>
+        <ol id="cols"></ol>
+      </div>
+      <div class="line" aria-hidden="true"><span class="rule"></span><svg class="cross" viewBox="0 0 20 20"><path d="M10 1V19M1 10H19"/></svg></div>
+      <dl class="below caps">
+        <div><dt class="dim">quarantined on intake</dt><dd class="num" id="k-quar">&hellip;</dd></div>
+        <div class="defect"><dt class="dim">of them carry a conflicting &ldquo;verified&rdquo; flag, a known data defect, and stay quarantined</dt><dd class="num" id="k-defect">&hellip;</dd></div>
+      </dl>
+    </section>
+
+    <section class="sec" id="catalogue" aria-labelledby="h-cat">
+      <h2 id="h-cat">Full catalogue</h2>
+      <p class="lede" id="lede">Read live from the hub. Counts beside the tabs and filters are for the whole index.</p>
+      <div class="kinds" role="tablist" aria-label="Kind" id="kinds"></div>
+      <div class="grid">
+        <details class="facets" id="facets" open>
+          <summary class="caps">Filters</summary>
+          <label class="field caps" for="q">Search name, description, publisher
+            <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="audit, pdf, inventory">
+          </label>
+          <label class="field caps" for="f-cat">Category
+            <select id="f-cat"></select>
+          </label>
+          <fieldset class="fs" id="f-tr"><legend class="caps dim">Trust</legend></fieldset>
+          <fieldset class="fs" id="f-tier" hidden><legend class="caps dim">Publisher tier, as the upstream index states it</legend></fieldset>
+          <fieldset class="fs" id="f-flag" hidden><legend class="caps dim">Hide by recorded risk flag</legend></fieldset>
+          <details class="morefx" id="more-f">
+            <summary class="caps">More filters</summary>
+            <fieldset class="fs" id="f-lic"><legend class="caps dim">Licence</legend></fieldset>
+          </details>
+          <label class="field caps" for="f-sort">Sort
+            <select id="f-sort">
+              <option value="state">Trust</option>
+              <option value="name">Name A&ndash;Z</option>
+            </select>
+          </label>
+          <button class="reset caps" id="reset" type="button">Clear filters</button>
+          <p class="pending caps dim" id="pending"></p>
+        </details>
+        <div class="results">
+          <div class="status caps" id="status" aria-live="polite"></div>
+          <ol class="list" id="above" aria-label="Verified"></ol>
+          <div class="divider" aria-hidden="true"><span class="rule"></span><svg class="cross" viewBox="0 0 20 20"><path d="M10 1V19M1 10H19"/></svg></div>
+          <ol class="list" id="below" aria-label="Below the line"></ol>
+          <button class="more caps" id="more" type="button" hidden>Show more</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="h-mix">
+      <h2 id="h-mix">Governance</h2>
+      <p class="lede">What the owner still has to clear, and where the index comes from. Every record carries its registry name and a sha256 checksum.</p>
+      <dl class="gov" id="gov"></dl>
+      <div class="mix">
+        <div><p class="caps dim" id="mix-t">Source registry</p><ul class="bars" id="mix-src"></ul></div>
+      </div>
+      <p class="note">Readiness here is stated through properties of the record: a self-hosted index, quarantine on intake, checksums, licence data and recorded risk flags. No certification or accreditation is claimed.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p class="caps dim">skills.axe.onl &middot; read-only API</p>
+    <p>Fetch any record as JSON: <code>curl -s https://skills.axe.onl/v1/skills/&lt;name&gt;</code></p>
+    <p class="dim">Risk flags, publisher tiers and inferred categories are data recorded about each entry, not claims we make about it. They point a reviewer at a record and do not replace the review. A federated entry is not safe because it is listed.</p>
+  </footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="d-name">
+  <div class="dl-in">
+    <div class="dl-head"><span class="caps dim" id="d-kind">Record</span><button class="close caps" id="d-close" type="button">Close</button></div>
+    <div class="state caps" id="d-state"></div>
+    <h2 id="d-name"></h2>
+    <p id="d-desc"></p>
+    <p class="caps dim" id="d-line-t">Record</p>
+    <div class="install"><code id="d-install"></code><button class="copy caps" id="d-copy" type="button" hidden>Copy</button></div>
+    <p class="caps dim" id="d-line-n"></p>
+    <dl class="facts" id="d-facts"></dl>
+    <p class="caps dim">Audit trail</p>
+    <ol class="trail" id="d-trail"></ol>
+  </div>
+</dialog>
+
+<!--HUB-FALLBACK-->
+<script src="/assets/app.js"></script>
+</body>
+</html>

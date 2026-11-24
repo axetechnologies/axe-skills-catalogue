@@ -7,6 +7,7 @@ from __future__ import annotations
 import collections
 import json
 import os
+import sqlite3
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -16,6 +17,7 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from hub import catalog as catalog_mod
 from hub import discover
+from hub import host_pages
 from hub import kinds
 from hub.evals import EvalStore, NoOpEvalStore as _NoOpEvalStore
 from hub.store import Conflict, HubError, NotFound, Registry
@@ -90,6 +92,7 @@ class _Handler(BaseHTTPRequestHandler):
     catalog: Any = None
     cache: Any = None
     openapi_doc: Any = None
+    page_data: Any = None
 
     # An idle or half-open client must not hold a thread for ever.
     timeout = 30
@@ -142,10 +145,12 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Max-Age", "600")
 
-    def _common(self) -> None:
+    def _common(self, page: bool = False) -> None:
         self.send_header("X-Request-Id", self._rid)
         for k, v in SECURITY_HEADERS:
-            self.send_header(k, v)
+            # A host page is an app that renders untrusted record text: it gets the strict policy, not the
+            # permissive one the API and the docs carry.
+            self.send_header(k, host_pages.CSP if page and k == "Content-Security-Policy" else v)
 
     def _finish(self, data: bytes) -> None:
         self.send_header("Content-Length", str(len(data)))
@@ -202,6 +207,49 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Vary", "Accept")
         self._common()
         self._finish(data)
+
+    def _send_page(self, code: int, data: bytes, ctype: str) -> None:
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "public, max-age=300, stale-while-revalidate=86400")
+        # One URL, three pages: a shared cache must key on the host the request arrived on.
+        self.send_header("Vary", "Host, X-Forwarded-Host")
+        self._common(page=True)
+        self._finish(data)
+
+    def _host_page(self, path: str) -> bool:
+        """The page, an asset or the page figures for the host this request is on. True when answered.
+
+        Only `/`, `/assets/*` and nothing else is host-aware, and only for the three page hosts: any other host
+        falls through to the routes below exactly as before.
+        """
+        if path not in ("/", "") and not path.startswith("/assets/"):
+            return False
+        key = host_pages.page_key(self.headers.get("Host"), self.headers.get("X-Forwarded-Host"), self.client_address[0])
+        if key is None:
+            return False
+        tenant = self._resolve_tenant()
+        if not tenant:
+            self._no_tenant()
+            return True
+        host = next(h for h, k in host_pages.HOSTS.items() if k == key)
+        if path in ("/", ""):
+            page = host_pages.render_page(key, self.page_data, tenant, host)
+            self._send_page(200, page.encode(), "text/html; charset=utf-8")
+            return True
+        name = path[len("/assets/"):]
+        if name == "stats.json":
+            try:
+                self._send_json(200, self.page_data.stats(tenant))
+            except sqlite3.Error:
+                self._not_found()
+            return True
+        asset = host_pages.asset_names(key).get(name)
+        if asset is None:
+            self._not_found()
+            return True
+        self._send_page(200, asset[0].read_bytes(), asset[1])
+        return True
 
     def _base(self) -> str:
         """Scheme and host this request arrived on; the install string follows it."""
@@ -326,11 +374,12 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/v1/skills":
             limit, offset = self._limit_offset()
             envelope = (qs.get("envelope") or [""])[0] in ("1", "true", "yes")
+            category = (qs.get("category") or [""])[0] or None
 
             def render() -> str:
-                rows = cat.list_page(tenant, limit, offset, kind)
+                rows = cat.list_page(tenant, limit, offset, kind, category)
                 if envelope:
-                    total = cat.total(tenant, kind)
+                    total = cat.category_total(tenant, kind, category) if category else cat.total(tenant, kind)
                     body = (f'{{"object": "list", "data": [{", ".join(rows)}], "limit": {limit}, '
                             f'"offset": {offset}, "total": {total}, '
                             f'"has_more": {"true" if offset + len(rows) < total else "false"}}}')
@@ -338,7 +387,7 @@ class _Handler(BaseHTTPRequestHandler):
                     body = "[" + ", ".join(rows) + "]"
                 return body.replace(catalog_mod.HOST_TOKEN, base)
 
-            self._send_json(200, self._cached((tenant, base, path, limit, offset, envelope, kind), render))
+            self._send_json(200, self._cached((tenant, base, path, limit, offset, envelope, kind, category), render))
             return True
 
         if path == "/v1/skills/search":
@@ -408,6 +457,9 @@ class _Handler(BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self._send_json(200, {"status": "ok"})
+            return
+
+        if self._host_page(path):
             return
 
         if self.catalog is not None and self._get_catalog_routes(path):
@@ -765,6 +817,7 @@ def make_server(
     ):
         if value is not None:
             attrs[name] = value
+    attrs["page_data"] = host_pages.PageData(registry._path)
     if catalog_mod.available(registry._path):
         cat = catalog_mod.Catalog(registry._path)
         attrs["catalog"] = cat
